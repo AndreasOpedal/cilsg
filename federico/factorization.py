@@ -36,6 +36,56 @@ def svd(X, k=50):
 
     return X_pred
 
+def als(X, k=50, l=1, epochs=1000):
+    '''
+    Performs alternating least squares with the goal of recreating the given matrix.
+
+    Parameters:
+    X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
+    k (int): the number of latent features. By default 50
+    l (float): the strenght of the regularizer. By default 1
+    epochs (int): the number of iterations. By default 1000
+
+    Returns:
+    (U, V) (numpy.ndarray, numpy.ndarray): matrices U and V such that X = UV (approximately)
+    '''
+
+    # Data matrix dimensions
+    m, n = X.shape[0], X.shape[1]
+
+    # Create matrices U, V, and randomly initalize them
+    U = np.random.rand(m, k)
+    V = np.random.rand(k, n)
+
+    # Extract non zero entries
+    users, items = X.nonzero()
+    observed = tuple(zip(users, items))
+
+    # Identity matrix time lambda
+    Il = l*np.identity(k)
+
+    # Begin loop
+    for epoch in range(epochs):
+
+        # Optimize U
+        for i in range(m):
+            Ml = np.zeros((k, k))
+            vr = np.zeros((k,))
+            for j in observed[1]:
+                Ml += V[:,j].dot(V[:,j].T) + Il
+                vr += V[:,j]*X[i,j]
+            U[i,:] = np.linalg.inv(V[:,j].dot(V[:,j].T) + Il).dot(V[:,j]*X[i,j])
+
+        # Optimize V
+        for j in range(n):
+            Ml = np.zeros((k, k))
+            vr = np.zeros((k,))
+            for i in observed[0]:
+                Ml += U[i,:].dot(U[i,:].T) + Il
+                vr += U[i,:]*X[i,j]
+            V[:,j] = np.linalg.inv(U[i,:].dot(U[i,:].T) + Il).dot(U[i,:]*X[i,j])
+
+    return U, V
 
 def svd_funk(X, k=50, l=1, eta=0.01, batch_size=50, epochs=1000):
     '''
