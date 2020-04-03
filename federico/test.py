@@ -2,9 +2,10 @@ import numpy as np
 import utils
 import preprocess
 import model_selection
-import svd
-import als
-import sgd
+import factorization
+import metrics
+
+np.random.seed(42)
 
 X = utils.read_data_as_matrix('../data/data_train.csv')
 
@@ -24,9 +25,10 @@ print('Done reading')
 # U, V = als.als(X, iters=3)
 # print(np.linalg.norm(X-U.dot(V)))
 
-# X_train, X_test = model_selection.train_test_split(X)
-#
-# print('Done split')
-#
-U, Z = sgd.sgd(X, epochs=1000)
-print(np.linalg.norm(X-U.dot(Z.T)))
+X_train, X_test = model_selection.train_test_split(X, min_user_ratings=2, test_movies_pct=0.5)
+print('Done split')
+print(len(X_train.nonzero()[0]))
+print(len(X_test.nonzero()[0]))
+
+X_pred = factorization.svd_pp(X_train, epochs=1500, eta=0.01, batch_size=50, l=1)
+print(metrics.rmse(X_test, X_pred))
