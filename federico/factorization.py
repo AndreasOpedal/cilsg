@@ -1,44 +1,63 @@
 import numpy as np
 
-def svd(X, k=50):
+class SVD:
     '''
-    Performs SVD on the covariance matrix of the given matrix.
-
-    Parameters:
-    X (numpy.ndarray): the data matrix
-    k (int): the number of dimensions to select for reconstruction. By default 50
-
-    Returns:
-    X_pred (numpy.ndarray): the reconstructed matrix
+    This class implements the basic SVD algorithm.
     '''
 
-    # Compute SVD of X
-    U, S, Vt = np.linalg.svd(X)
-    D = np.zeros(shape=(S.shape[0], S.shape[0])) # create diagonal matrix D
-    np.fill_diagonal(D, S) # fill D with S
+    def __init__(self, X, k=50):
+        '''
+        Initializes the class with the given parameters.
 
-    # Square root of D
-    D = np.sqrt(D)
+        Parameters:
+        X (numpy.ndarray): the data matrix
+        k (int): the number of dimensions to select for reconstruction. By default 50
+        '''
 
-    # Pad D
-    D_p = np.append(D, np.zeros((U.shape[0]-D.shape[0], D.shape[0])), axis=0)
+        self.X = X
+        self.k = k
+        self.U_k = None
+        self.V_k = None
 
-    # Scale U, Vt
-    U = U.dot(D_p)
-    V = D.dot(Vt.T)
+    def fit(self):
+        '''
+        Computes the SVD composition.
+        '''
+        # Compute SVD of X
+        U, S, Vt = np.linalg.svd(self.X)
+        D = np.zeros(shape=(S.shape[0], S.shape[0])) # create diagonal matrix D
+        np.fill_diagonal(D, S) # fill D with S
 
-    # Select vectors from U, V
-    U_k = U[:,:k]
-    V_k = V[:,:k]
+        # Square root of D
+        D = np.sqrt(D)
 
-    # Reconstruct matrix
-    X_pred = U_k.dot(V_k.T)
+        # Pad D
+        D_p = np.append(D, np.zeros((U.shape[0]-D.shape[0], D.shape[0])), axis=0)
 
-    return X_pred
+        # Scale U, Vt
+        U = U.dot(D_p)
+        V = D.dot(Vt.T)
+
+        # Select vectors from U, V
+        self.U_k = U[:,:self.k]
+        self.V_k = V[:,:self.k]
+
+    def transform(self):
+        '''
+        Computes the prediction matrix based on the computed matrices U, V
+
+        Returns:
+        X_pred (numpy.ndarray): the reconstructed matrix
+        '''
+
+        # Reconstruct matrix
+        X_pred = self.U_k.dot(self.V_k.T)
+
+        return X_pred
 
 def als(X, k=50, l=1, epochs=1000):
     '''
-    Performs alternating least squares with the goal of recreating the given matrix.
+    Performs alternating least squares (ALS) with the goal of recreating the given matrix.
 
     Parameters:
     X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
@@ -87,20 +106,15 @@ def als(X, k=50, l=1, epochs=1000):
 
     return U, V
 
-def svd_funk(X, k=50, l=1, eta=0.01, batch_size=50, epochs=1000):
+def als_fast(X, k=50, l=1, epochs=1000):
     '''
-    Performs SVD as popularized by Simon Funk. The goal of obtaining matrix P, Q
+    Performs fast eALS algorithm, based on Xiangnan's paper. The goal is to compute matrices P, Q
     such that X = P*t(Q).
-    The object function is the following:
-
-    H(P, Q) = (X[u,i] - p[u]*q[i])^2 + l*(||p[u]||^2 + ||q[i]||^2)
 
     Parameters:
     X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
     k (int): the number of latent features. By default 50
     l (float): the strenght of the regularizer. By default 1
-    eta (float): the learning rate. By default 0.01
-    batch_size (int): the number of samples to be used in the SGD step. By default 50
     epochs (int): the number of iterations. By default 1000
 
     Returns:
@@ -115,150 +129,290 @@ def svd_funk(X, k=50, l=1, eta=0.01, batch_size=50, epochs=1000):
     users, items = X.nonzero()
     observed = tuple(zip(users, items))
 
-    for epoch in range(epochs):
-        indexes = np.random.randint(low=0, high=len(observed), size=batch_size)
-        for index in indexes:
-            # Extract index
-            u, i = observed[index]
-            # Local variables
-            pu, qi = U[u,:], Z[i,:]
-            error = X[u,i] - pu.dot(qi)
-            # Update step
-            P[u,:] = P[u,:] + eta*(delta*qi - l*pu)
-            Q[i,:] = Q[i,:] + eta*(delta*pu - l*qi)
-
-    # Reconstruct matrix
-    X_pred = P.dot(Q.T)
-
-    return X_pred
-
-def svd_biased(X, k=50, l=1, eta=0.01, batch_size=50, epochs=1000):
+class SVDFunk:
     '''
-    Performs a biased version of SVD with the goal of obtaining matrix P, Q.
-    such that X = U*t(Z).
-    The object function is the following:
-
-    H(P, Q) = (X[u,i] - mu - b[u] - b[i] - p[u]*q[i])^2 + l*(||p[u]||^2 + ||q[i]||^2 + b[u]^2 + b[i]^2)
-
-    where mu is the global (rating) average, b[u] and b[i] are the users and items biases respectively.
-
-    Parameters:
-    X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
-    k (int): the number of latent features. By default 50
-    l (float): the strenght of the regularizer. By default 1
-    eta (float): the learning rate. By default 0.01
-    batch_size (int): the number of samples to be used in the SGD step. By default 50
-    epochs (int): the number of iterations. By default 1000
-
-    Returns:
-    X_pred (numpy.ndarray): the reconstructed matrix
+    This class implements the SVD variant popularized by Simon Funk.
     '''
 
-    # Initialize P, Q
-    P = np.random.rand(X.shape[0],k)
-    Q = np.random.rand(X.shape[1],k)
+    def __init__(self, X, k=50, l=1, eta=0.01, batch_size=50, epochs=1000):
+        '''
+        Initializes the class with the given parameters.
 
-    # Initialize biases
-    bias_u = np.zeros(X.shape[0])
-    bias_i = np.zeros(X.shape[1])
+        Parameters:
+        X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
+        k (int): the number of latent features. By default 50
+        l (float): the strenght of the regularizer. By default 1
+        eta (float): the learning rate. By default 0.01
+        batch_size (int): the number of samples to be used in the SGD step. By default 50
+        epochs (int): the number of iterations. By default 1000
+        '''
 
-    # Extract non zero entries
-    users, items = X.nonzero()
-    observed = tuple(zip(users, items))
+        self.X = X
+        self.k = k
+        self.l = l
+        self.eta = eta
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.P = None
+        self.Q = None
 
-    # Compute global average
-    mu = X.mean()
+    def fit(self):
+        '''
+        Finds matrices P, Q by optimizing the following objective function:
 
-    for epoch in range(epochs):
-        indexes = np.random.randint(low=0, high=len(observed), size=batch_size)
-        for index in indexes:
-            # Extract indexes
-            u, i = observed[index]
-            # Local variables
-            pu, qi = P[u,:], Q[i,:]
-            bu, bi = bias_u[u], bias_i[i]
-            # Compute prediction error
-            error = X[u,i] - (pu.dot(qi) + bd + bn + mu)
-            # Update step
-            P[u,:] = P[u,:] + eta*(error*qi - l*pu)
-            Q[i,:] = Q[i,:] + eta*(error*pu - l*qi)
-            bias_u = bias_u + eta*(error - l*bu)
-            bias_i = bias_i + eta*(error - l*bi)
+        H(P, Q) = (X[u,i] - p[u]*q[i])^2 + l*(||p[u]||^2 + ||q[i]||^2)
+        '''
 
-    # Reconstruct matrix
-    X_pred = P.dot(Q.T)
+        # Initialize P, Q
+        self.P = np.random.rand(self.X.shape[0],self.k)
+        self.Q = np.random.rand(self.X.shape[1],self.k)
 
-    return X_pred
+        # Extract non zero entries
+        users, items = self.X.nonzero()
+        observed = tuple(zip(users, items))
 
-def svd_pp(X, k=50, l=1, eta=0.01, batch_size=50, epochs=1000):
+        for epoch in range(self.epochs):
+            indexes = np.random.randint(low=0, high=len(observed), size=self.batch_size)
+            for index in indexes:
+                # Extract index
+                u, i = observed[index]
+                # Local variables
+                pu, qi = self.P[u,:], self.Q[i,:]
+                error = self.X[u,i] - pu.dot(qi)
+                # Update step
+                self.P[u,:] = self.P[u,:] + self.eta*(delta*qi - self.l*pu)
+                self.Q[i,:] = self.Q[i,:] + self.eta*(delta*pu - self.l*qi)
+
+    def transform(self):
+        '''
+        Computes the prediction matrix based on the computed matrices P, Q
+
+        Returns:
+        X_pred (numpy.ndarray): the reconstructed matrix
+        '''
+
+        # Reconstruct matrix
+        X_pred = self.P.dot(self.Q.T)
+
+        return X_pred
+
+class SVDBiased:
     '''
-    Performs the SVD++ algorithm based on Koren's paper. The goal is to find matrices P, Q
-    such that X = P*t(Q).
-    The object function is the following:
-
-    H(P, Q) = (X[u,i] - mu - b[u] - b[i] - q[i]*(p[u] + 1/sqrt(|N(u)|)*sum(y[j])))^2 +
-            + l*(b[u]^2 + b[i]^2 + ||p[u]||^2 + ||q[i]||^2 + sum(||y[j]||^2))
-
-    where mu is the global (rating) average, b[u] and b[i] are the users and items biases respectively,
-    N(u) represent the items rated by user u, and each y[j] represent one item factor.
-
-    Parameters:
-    X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
-    k (int): the number of latent features. By default 50
-    l (float): the strenght of the regularizer. By default 1
-    eta (float): the learning rate. By default 0.01
-    batch_size (int): the number of samples to be used by SGD. By default 50
-    epochs (int): the number of iterations. By default 1000
-
-    Returns:
-    X_pred (numpy.ndarray): the reconstructed matrix
+    This class implements a biased version of Funk's SVD.
     '''
 
-    # Initialize P, Q
-    P = np.random.rand(X.shape[0],k)
-    Q = np.random.rand(X.shape[1],k)
+    def __init__(self, k=50, l=1, eta=0.01, batch_size=50, epochs=1000):
+        '''
+        Initializes the class with the given parameters.
 
-    # Initialize biases
-    bias_u = np.zeros(X.shape[0])
-    bias_i = np.zeros(X.shape[1])
+        Parameters:
+        X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
+        k (int): the number of latent features. By default 50
+        l (float): the strenght of the regularizer. By default 1
+        eta (float): the learning rate. By default 0.01
+        batch_size (int): the number of samples to be used in the SGD step. By default 50
+        epochs (int): the number of iterations. By default 1000
+        '''
 
-    # Initialize item factors
-    Y = np.random.normal(0, 1, (X.shape[1],k))
+        self.X = None
+        self.k = k
+        self.l = l
+        self.eta = eta
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.P = None
+        self.Q = None
+        self.mu = None
+        self.bias_u = None
+        self.bias_i = None
 
-    # Extract non zero entries
-    users, items = X.nonzero()
-    observed = tuple(zip(users, items))
+    def fit(self, X):
+        '''
+        Finds matrices P, Q and biases by optimizing the following objective function:
 
-    # Compute global average
-    mu = X.mean()
+        H(P, Q) = (X[u,i] - mu - b[u] - b[i] - p[u]*q[i])^2 + l*(||p[u]||^2 + ||q[i]||^2 + b[u]^2 + b[i]^2)
 
-    for epoch in range(epochs):
-        indexes = np.random.randint(low=0, high=len(observed), size=batch_size)
-        for index in indexes:
-            # Extract indexes
-            u, i = observed[index]
-            # Local variables
-            pu, qi = P[u,:], Q[i,:]
-            bu, bi = bias_u[u], bias_i[i]
-            # Items rated by user u
-            nu = X[u,:].nonzero()[1] # dimension 1 because we need the items indexes
+        Parameters:
+        X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
+        '''
+
+        # Read X
+        self.X = X
+
+        # Initialize P, Q
+        self.P = np.random.rand(self.X.shape[0],self.k)
+        self.Q = np.random.rand(self.X.shape[1],self.k)
+
+        # Initialize biases
+        self.bias_u = np.zeros(self.X.shape[0])
+        self.bias_i = np.zeros(self.X.shape[1])
+
+        # Extract non zero entries
+        users, items = self.X.nonzero()
+        observed = tuple(zip(users, items))
+
+        # Compute global average
+        self.mu = self.X.mean()
+
+        for epoch in range(self.epochs):
+            indexes = np.random.randint(low=0, high=len(observed), size=self.batch_size)
+            for index in indexes:
+                # Extract indexes
+                u, i = observed[index]
+                # Local variables
+                pu, qi = self.P[u,:], self.Q[i,:]
+                bu, bi = self.bias_u[u], self.bias_i[i]
+                # Compute prediction error
+                error = self.X[u,i] - (pu.dot(qi) + bu + bi + self.mu)
+                # Update step
+                self.P[u,:] = self.P[u,:] + self.eta*(error*qi - self.l*pu)
+                self.Q[i,:] = self.Q[i,:] + self.eta*(error*pu - self.l*qi)
+                self.bias_u = self.bias_u + self.eta*(error - self.l*bu)
+                self.bias_i = self.bias_i + self.eta*(error - self.l*bi)
+
+    def transform(self):
+        '''
+        Computes the prediction matrix based on the computed matrices P, Q and the biases
+
+        Returns:
+        X_pred (numpy.ndarray): the reconstructed matrix
+        '''
+
+        # Reconstruct matrix
+        X_pred = self.P.dot(self.Q.T)
+
+        # Add global mean
+        X_pred += self.mu
+
+        # Add biases
+        for u in range(X_pred.shape[0]):
+            X_pred[u,:] += self.bias_i
+        for i in range(X_pred.shape[1]):
+            X_pred[:,i] += self.bias_u
+
+        return X_pred
+
+class SVDPP:
+    '''
+    This class implements the SVD++ algorithm, as described in Koren's paper.
+    '''
+
+    def __init__(self, k=50, l=1, eta=0.01, batch_size=50, epochs=1000):
+        '''
+        Initializes the class with the given parameters.
+
+        Parameters:
+        k (int): the number of latent features. By default 50
+        l (float): the strenght of the regularizer. By default 1
+        eta (float): the learning rate. By default 0.01
+        batch_size (int): the number of samples to be used in the SGD step. By default 50
+        epochs (int): the number of iterations. By default 1000
+        '''
+
+        self.X = None
+        self.k = k
+        self.l = l
+        self.eta = eta
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.P = None
+        self.Q = None
+        self.mu = None
+        self.bias_u = None
+        self.bias_i = None
+        self.Y = None
+
+    def fit(self, X):
+        '''
+        Finds matrices P, Q, biases, and item factors by optimizing the following objective function:
+
+        H(P, Q) = (X[u,i] - mu - b[u] - b[i] - q[i]*(p[u] + 1/sqrt(|N(u)|)*sum(y[j])))^2 +
+                + l*(b[u]^2 + b[i]^2 + ||p[u]||^2 + ||q[i]||^2 + sum(||y[j]||^2))
+
+        where mu is the global (rating) average, b[u] and b[i] are the users and items biases respectively,
+        N(u) represent the items rated by user u, and each y[j] represent one item factor.
+
+        Parameters:
+        X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
+        '''
+
+        # Read X
+        self.X = X
+
+        # Initialize P, Q
+        self.P = np.random.rand(self.X.shape[0],self.k)
+        self.Q = np.random.rand(self.X.shape[1],self.k)
+
+        # Initialize biases
+        self.bias_u = np.zeros(self.X.shape[0])
+        self.bias_i = np.zeros(self.X.shape[1])
+
+        # Initialize item factors
+        self.Y = np.random.normal(0, 1, (self.X.shape[1],self.k))
+
+        # Extract non zero entries
+        users, items = self.X.nonzero()
+        observed = tuple(zip(users, items))
+
+        # Compute global average
+        self.mu = self.X.mean()
+
+        for epoch in range(self.epochs):
+            indexes = np.random.randint(low=0, high=len(observed), size=self.batch_size)
+            for index in indexes:
+                # Extract indexes
+                u, i = observed[index]
+                # Local variables
+                pu, qi = self.P[u,:], self.Q[i,:]
+                bu, bi = self.bias_u[u], self.bias_i[i]
+                # Items rated by user u
+                nu = self.X[u,:].nonzero()[1] # dimension 1 because we need the items indexes
+                sqrt_len_nu = np.sqrt(len(nu))
+                # Initialize implicit feedback vector
+                ifbv = np.zeros(self.k)
+                # Build implicit feedback vector
+                for j in nu:
+                    ifbv += self.Y[j,:]/sqrt_len_nu # done so for stability
+                # Compute prediction error
+                error = self.X[u,i] - (qi.dot(pu + ifbv) + bu + bi + self.mu)
+                # Update step
+                self.P[u,:] = self.P[u,:] + self.eta*(error*qi - self.l*pu)
+                self.Q[i,:] = self.Q[i,:] + self.eta*(error*(pu + ifbv) - self.l*qi)
+                self.bias_u = self.bias_u + self.eta*(error - self.l*bu)
+                self.bias_i = self.bias_i + self.eta*(error - self.l*bi)
+                for j in nu:
+                    self.Y[j,:] = self.Y[j,:] + self.eta*(error*(qi/sqrt_len_nu) - self.l*self.Y[j,:])
+
+    def transform(self):
+        '''
+        Computes the prediction matrix based on the computed matrices P, Q, the biases, and the
+        item factors.
+
+        Returns:
+        X_pred (numpy.ndarray): the reconstructed matrix
+        '''
+
+        # Add item factors to P
+        for u in range(self.X.shape[0]):
+            nu = self.X[u,:].nonzero()[1]
             sqrt_len_nu = np.sqrt(len(nu))
-            # Initialize implicit feedback vector
-            i_feed = np.zeros(k)
-            # Build implicit feedback vector
+            ifbv = np.zeros(self.k)
+            # Compute feedback for user
             for j in nu:
-                i_feed += Y[j,:]/sqrt_len_nu # done so for stability
-            # Compute prediction error
-            error = X[u,i] - (qi.dot(pu + i_feed) + bu + bi + mu)
-            # Update step
-            P[u,:] = P[u,:] + eta*(error*qi - l*pu)
-            Q[i,:] = Q[i,:] + eta*(error*(pu + i_feed) - l*qi)
-            bias_u = bias_u + eta*(error - l*bu)
-            bias_i = bias_i + eta*(error - l*bi)
-            for j in nu:
-                Y[j,:] = Y[j,:] + eta*(error*(qi/sqrt_len_nu) - l*Y[j,:])
+                ifbv += self.Y[j,:]/sqrt_len_nu
+            # Update prediction matrix at u
+            self.P[u,:] += ifbv
 
-    # Reconstruct matrix
-    X_pred = P.dot(Q.T)
+        # Reconstruct matrix
+        X_pred = self.P.dot(self.Q.T)
 
-    return X_pred
+        # Add global mean
+        X_pred += self.mu
+
+        # Add biases
+        for u in range(X_pred.shape[0]):
+            X_pred[u,:] += self.bias_i
+        for i in range(X_pred.shape[1]):
+            X_pred[:,i] += self.bias_u
+
+        return X_pred
