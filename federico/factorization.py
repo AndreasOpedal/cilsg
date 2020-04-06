@@ -5,24 +5,30 @@ class SVD:
     This class implements the basic SVD algorithm.
     '''
 
-    def __init__(self, X, k=50):
+    def __init__(self, k=50):
         '''
         Initializes the class with the given parameters.
 
         Parameters:
-        X (numpy.ndarray): the data matrix
         k (int): the number of dimensions to select for reconstruction. By default 50
         '''
 
-        self.X = X
         self.k = k
         self.U_k = None
         self.V_k = None
+        self.X = None
 
-    def fit(self):
+    def fit(self, X):
         '''
-        Computes the SVD composition.
+        Computes the SVD composition of the given matrix.
+
+        Parameters:
+        X (numpy.ndarray): the data matrix
         '''
+
+        # Read X
+        self.X = X
+
         # Compute SVD of X
         U, S, Vt = np.linalg.svd(self.X)
         D = np.zeros(shape=(S.shape[0], S.shape[0])) # create diagonal matrix D
@@ -55,91 +61,92 @@ class SVD:
 
         return X_pred
 
-def als(X, k=50, l=1, epochs=1000):
+class ALS:
     '''
-    Performs alternating least squares (ALS) with the goal of recreating the given matrix.
-
-    Parameters:
-    X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
-    k (int): the number of latent features. By default 50
-    l (float): the strenght of the regularizer. By default 1
-    epochs (int): the number of iterations. By default 1000
-
-    Returns:
-    (U, V) (numpy.ndarray, numpy.ndarray): matrices U and V such that X = UV (approximately)
+    This class implements an element-wise version of the alternating least squares (ALS) algorithm.
     '''
 
-    # Data matrix dimensions
-    m, n = X.shape[0], X.shape[1]
+    def __init__(self, k=50, l=1, epochs=1000):
+        '''
+        Initializes the class with the given parameters.
 
-    # Create matrices U, V, and randomly initalize them
-    U = np.random.rand(m, k)
-    V = np.random.rand(k, n)
+        Parameters:
+        k (int): the number of latent features. By default 50
+        l (float): the strenght of the regularizer. By default 1
+        epochs (int): the number of iterations. By default 1000
+        '''
 
-    # Extract non zero entries
-    users, items = X.nonzero()
-    observed = tuple(zip(users, items))
+        self.k = k
+        self.l = l
+        self.epochs = epochs
+        self.X = None
+        self.P = None
+        self.Q = None
 
-    # Identity matrix time lambda
-    Il = l*np.identity(k)
+    def fit(self, X):
+        '''
+        Finds matrices P, Q by optimizing the following objective function (element-wise):
 
-    # Begin loop
-    for epoch in range(epochs):
+        H(P, Q)[u,i] = (X[u,i] - t(P[u])*Q[i])^2 + l*(||P[u]||^2 + ||Q[i]||^2)
+        '''
 
-        # Optimize U
-        for i in range(m):
-            Ml = np.zeros((k, k))
-            vr = np.zeros((k,))
-            for j in observed[1]:
-                Ml += V[:,j].dot(V[:,j].T) + Il
-                vr += V[:,j]*X[i,j]
-            U[i,:] = np.linalg.inv(V[:,j].dot(V[:,j].T) + Il).dot(V[:,j]*X[i,j])
+        # Read X
+        self.X = X
 
-        # Optimize V
-        for j in range(n):
-            Ml = np.zeros((k, k))
-            vr = np.zeros((k,))
-            for i in observed[0]:
-                Ml += U[i,:].dot(U[i,:].T) + Il
-                vr += U[i,:]*X[i,j]
-            V[:,j] = np.linalg.inv(U[i,:].dot(U[i,:].T) + Il).dot(U[i,:]*X[i,j])
+        # Create matrices U, V, and randomly initalize them
+        self.P = np.random.rand(self.X.shape[0], self.k)
+        self.Q = np.random.rand(self.k, self.X.shape[1])
 
-    return U, V
+        # Extract non zero entries
+        users, items = self.X.nonzero()
+        observed = tuple(zip(users, items))
 
-def als_fast(X, k=50, l=1, epochs=1000):
-    '''
-    Performs fast eALS algorithm, based on Xiangnan's paper. The goal is to compute matrices P, Q
-    such that X = P*t(Q).
+        # Begin loop
+        for epoch in range(self.epochs):
+            # Get indexes
+            uss, iss = observed[0], observed[1]
+            # Update P
+            for u in uss:
+                for f in range(self.k):
+                    nominator, denominator = 0, 0
+                    for i in iss:
+                        rui = self.P[u,:].T.dot(self.Q[:,i])
+                        nominator = nominator + (self.X[u,i] - (rui - self.P[u,f]*self.Q[f,i]))*self.Q[f,i]
+                        denominator = denominator + self.Q[f,i]**2*self.l
+                    self.P[u,f] = nominator/denominator
+            # Update Q
+            for i in iss:
+                for f in range(self.k):
+                    nominator, denominator = 0, 0
+                    for u in uss:
+                        rui = self.P[u,:].T.dot(self.Q[:,i])
+                        nominator = nominator + (self.X[u,i] - (rui - self.P[u,f]*self.Q[f,i]))*self.P[u,f]
+                        denominator = denominator + self.P[u,f]**2*self.l
+                    self.Q[f,i] = nominator/denominator
 
-    Parameters:
-    X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
-    k (int): the number of latent features. By default 50
-    l (float): the strenght of the regularizer. By default 1
-    epochs (int): the number of iterations. By default 1000
+    def transform(self):
+        '''
+        Computes the prediction matrix based on the computed matrices P, Q
 
-    Returns:
-    X_pred (numpy.ndarray): the reconstructed matrix
-    '''
+        Returns:
+        X_pred (numpy.ndarray): the reconstructed matrix
+        '''
 
-    # Initialize P, Q
-    P = np.random.rand(X.shape[0],k)
-    Q = np.random.rand(X.shape[1],k)
+        # Reconstruct matrix
+        X_pred = self.P.dot(self.Q)
 
-    # Extract non zero entries
-    users, items = X.nonzero()
-    observed = tuple(zip(users, items))
+        return X_pred
 
 class SVDFunk:
     '''
     This class implements the SVD variant popularized by Simon Funk.
     '''
 
-    def __init__(self, X, k=50, l=1, eta=0.01, batch_size=50, epochs=1000):
+    def __init__(self, k=50, l=1, eta=0.01, batch_size=50, epochs=1000):
         '''
         Initializes the class with the given parameters.
 
         Parameters:
-        X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
         k (int): the number of latent features. By default 50
         l (float): the strenght of the regularizer. By default 1
         eta (float): the learning rate. By default 0.01
@@ -147,21 +154,27 @@ class SVDFunk:
         epochs (int): the number of iterations. By default 1000
         '''
 
-        self.X = X
         self.k = k
         self.l = l
         self.eta = eta
         self.batch_size = batch_size
         self.epochs = epochs
+        self.X = None
         self.P = None
         self.Q = None
 
-    def fit(self):
+    def fit(self, X):
         '''
         Finds matrices P, Q by optimizing the following objective function:
 
         H(P, Q) = (X[u,i] - p[u]*q[i])^2 + l*(||p[u]||^2 + ||q[i]||^2)
+
+        Parameters:
+        X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
         '''
+
+        # Read X
+        self.X = X
 
         # Initialize P, Q
         self.P = np.random.rand(self.X.shape[0],self.k)
@@ -214,12 +227,12 @@ class SVDBiased:
         epochs (int): the number of iterations. By default 1000
         '''
 
-        self.X = None
         self.k = k
         self.l = l
         self.eta = eta
         self.batch_size = batch_size
         self.epochs = epochs
+        self.X = None
         self.P = None
         self.Q = None
         self.mu = None
@@ -309,12 +322,12 @@ class SVDPP:
         epochs (int): the number of iterations. By default 1000
         '''
 
-        self.X = None
         self.k = k
         self.l = l
         self.eta = eta
         self.batch_size = batch_size
         self.epochs = epochs
+        self.X = None
         self.P = None
         self.Q = None
         self.mu = None
