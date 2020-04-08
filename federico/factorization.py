@@ -88,6 +88,9 @@ class ALS:
         Finds matrices P, Q by optimizing the following objective function (element-wise):
 
         H(P, Q)[u,i] = (X[u,i] - t(P[u])*Q[i])^2 + l*(||P[u]||^2 + ||Q[i]||^2)
+
+        Parameters:
+        X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
         '''
 
         # Read X
