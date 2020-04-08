@@ -2,6 +2,7 @@ import numpy as np
 import numpy.matlib
 import pandas as pd
 from scipy.sparse import dok_matrix
+from scipy.sparse import hstack
 import math
 from tqdm.auto import tqdm
 import os
@@ -109,16 +110,28 @@ def kfold_cv(model, metric, folds=None, k=5, imputer=None, dir_path=None):
             df = pd.read_csv(file_path)
             folds.append(df)
 
+    # List holding all folds as sparse matrices
+    x = []
+    for i in range(k):
+        x.append(utils.data_frame_to_sparse_matrix(folds[i]))
+
     # Initalize scores
     scores = []
 
     for i in tqdm(range(k)):
-        # Create training and test set
-        df_train = pd.concat([x for j, x in enumerate(folds) if j!=i])
-        df_test = folds[i]
-        # Transform train and test data frames into sparse matrices
-        X_train = utils.data_frame_to_sparse_matrix(df_train)
-        X_test = utils.data_frame_to_sparse_matrix(df_test)
+        # Create train set list, which will contain all matrix folds
+        train_set = []
+        for j in range(k):
+            if j != i:
+                train_set.append(x[j])
+        # Initalize train matrix with first element
+        X_train = dok_matrix(train_set[0])
+        for j in range(1,k-1):
+            indexes = train_set[j].nonzero()
+            X_train[indexes] = train_set[j][indexes]
+        # Assign test set
+        X_test = x[i]
+        # Impute (if any)
         if not (imputer is None):
             X_train = imputer(X_train)
             X_test = imputer(X_test)
