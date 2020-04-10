@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from scipy.sparse import dok_matrix
+import csv
 
 def read_data_as_matrix(file_path):
     '''
@@ -25,26 +26,26 @@ def read_data_as_matrix(file_path):
 
     return X
 
-def read_data_as_tuples(file_path):
+def read_submission_indexes(file_path):
     '''
-    Reads the data from the given file path as an array of tuples holding the indexes and values of the data.
+    Reads the indexes for which to make the predictions.
 
     Parameters:
     file_path (string): the file path to read
 
     Returns:
-    tuples (numpy.array): array of tuples representing the data, where each tuple t_i has the format (row_i, column_i, value_i)
+    indexes (list): a list where each element is a tuple of the form (row, column)
     '''
 
     data_train_raw = pd.read_csv(file_path).values
 
-    tuples = np.array((data_train_raw.shape[0], 1))
+    tuples = []
 
     for i in range(data_train_raw.shape[0]):
         indices, value = data_train_raw[i,0], int(data_train_raw[i,1])
         indices = indices.split('_')
         row, column = int(indices[0][1:])-1, int(indices[1][1:])-1 # indexing in the data starts from 1
-        tuples[i] = (row, column, value)
+        tuples.append((row, column))
 
     return tuples
 
@@ -98,3 +99,37 @@ def data_frame_to_sparse_matrix(df):
         X[row, col] = pred
 
     return X
+
+def write_predictions_to_csv(X_pred, indexes, file_path):
+    '''
+    Writes on a csv file the predictions. The format of the prediction file is the following (second row is example):
+
+    Id, Prediction
+    r1_c1, 1
+
+    Parameters:
+    X_pred (numpy.ndarray): the prediction matrix
+    indexes (list): the list of the indexes. Each element is a tuple of the form (row, column)
+    file_path (string): the path to the prediction file
+    '''
+
+    # Define header
+    header = []
+    header.append('Id')
+    header.append('Prediction')
+
+    # Write file
+    with open(file_path, 'w') as csvfile:
+        writer = csv.writer(csvfile)
+        writer = csv.DictWriter(csvfile, fieldnames=header)
+        writer.writeheader()
+        for index in indexes:
+            # Row of the csv file
+            file_row = {}
+            # Extract indexes
+            row, col = index
+            # Build file row
+            file_row['Id'] = 'r'+ str(row) + '_c' + str(col)
+            file_row['Prediction'] = X_pred[row,col]
+            # Write file row
+            writer.writerow(file_row)
