@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm.auto import tqdm
 
 class SVD:
     '''
@@ -105,7 +106,7 @@ class ALS:
         observed = tuple(zip(users, items))
 
         # Begin loop
-        for epoch in range(self.epochs):
+        for epoch in tqdm(range(self.epochs)):
             # Get indexes
             uss, iss = observed[0], observed[1]
             # Update P
@@ -187,7 +188,7 @@ class SVDFunk:
         users, items = self.X.nonzero()
         observed = tuple(zip(users, items))
 
-        for epoch in range(self.epochs):
+        for epoch in tqdm(range(self.epochs)):
             indexes = np.random.randint(low=0, high=len(observed), size=self.batch_size)
             for index in indexes:
                 # Extract index
@@ -270,7 +271,7 @@ class SVDBiased:
         # Compute global average
         self.mu = self.X.mean()
 
-        for epoch in range(self.epochs):
+        for epoch in tqdm(range(self.epochs)):
             indexes = np.random.randint(low=0, high=len(observed), size=self.batch_size)
             for index in indexes:
                 # Extract indexes
@@ -366,14 +367,14 @@ class SVDPP:
         # Initialize item factors
         self.Y = np.random.normal(0, 1, (self.X.shape[1],self.k))
 
+        # Compute global average
+        self.mu = self.X.mean()
+
         # Extract non zero entries
         users, items = self.X.nonzero()
         observed = tuple(zip(users, items))
 
-        # Compute global average
-        self.mu = self.X.mean()
-
-        for epoch in range(self.epochs):
+        for epoch in tqdm(range(self.epochs)):
             indexes = np.random.randint(low=0, high=len(observed), size=self.batch_size)
             for index in indexes:
                 # Extract indexes
