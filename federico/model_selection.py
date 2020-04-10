@@ -82,7 +82,7 @@ def kfold_split(X_df, k=5, save=False):
 
     return fold_list
 
-def kfold_cv(model, metric, folds=None, k=5, imputer=None, dir_path=None):
+def kfold_cv(model, metric, folds=None, k=5, preprocess=None, postprocess=None, dir_path=None):
     '''
     Performs k-fold crossvalidation on either the given data or the folds at the given location.
 
@@ -92,7 +92,8 @@ def kfold_cv(model, metric, folds=None, k=5, imputer=None, dir_path=None):
     k (int): the number of folds. This number is necessary if the folds are to be read from disk. By default 5
     model (class): the class representing the model
     metric (function): the metric to be used to compute the error
-    imputer (function): the imputer to be applied to both train and test matrices. By default None
+    preprocess (function): the preprocess function to be applied to both train and test matrices. By default None
+    postprocess (function): the postprocess function to be applied to the prediction matrix. By default None
     dir_path (string): the directory where the folds are stored. The file for the i-th fold should named as
                        follows: fold-i.csv, where i represents the i-th fold. Note that numbering starts from 0.
                        By default None
@@ -131,14 +132,17 @@ def kfold_cv(model, metric, folds=None, k=5, imputer=None, dir_path=None):
             X_train[indexes] = train_set[j][indexes]
         # Assign test set
         X_test = x[i]
-        # Impute (if any)
-        if not (imputer is None):
-            X_train = imputer(X_train)
-            X_test = imputer(X_test)
+        # Preprocess (if any)
+        if not (preprocess is None):
+            X_train = preprocess(X_train)
+            X_test = preprocess(X_test)
         # Run model
         model.fit(X_train)
         # Make prediction
         X_pred = model.transform()
+        # Postprocess (if any)
+        if not (postprocess is None):
+            X_pred = postprocess(X_pred)
         # Compute error
         score = metric(X_test, X_pred)
         # Add error to scores
