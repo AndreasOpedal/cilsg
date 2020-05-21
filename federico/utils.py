@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from scipy.sparse import dok_matrix
 import csv
+import math
+from random import shuffle
 
 def read_data_as_matrix(file_path):
     '''
@@ -100,7 +102,7 @@ def data_frame_to_sparse_matrix(df):
 
     return X
 
-def write_predictions_to_csv(X_pred, indexes, file_path):
+def write_predictions_to_csv(predictions, file_path):
     '''
     Writes on a csv file the predictions. The format of the prediction file is the following (second row is example):
 
@@ -108,8 +110,7 @@ def write_predictions_to_csv(X_pred, indexes, file_path):
     r1_c1, 1
 
     Parameters:
-    X_pred (numpy.ndarray): the prediction matrix
-    indexes (list): the list of the indexes. Each element is a tuple of the form (row, column)
+    predictions (??): the predictions
     file_path (string): the path to the prediction file
     '''
 
@@ -123,13 +124,55 @@ def write_predictions_to_csv(X_pred, indexes, file_path):
         writer = csv.writer(csvfile)
         writer = csv.DictWriter(csvfile, fieldnames=header)
         writer.writeheader()
-        for index in indexes:
+        for row, col, pred in predictions:
             # Row of the csv file
             file_row = {}
-            # Extract indexes
-            row, col = index
             # Build file row
-            file_row['Id'] = 'r'+ str(row) + '_c' + str(col)
-            file_row['Prediction'] = X_pred[row,col]
+            file_row['Id'] = 'r'+ str(row+1) + '_c' + str(col+1)
+            file_row['Prediction'] = pred
             # Write file row
             writer.writerow(file_row)
+
+def random_mini_batches(users, items, ratings, batch_size=256):
+    '''
+    Returns a list of shuffled mini batches.
+
+    Source: https://medium.com/@victorkohler/collaborative-filtering-using-deep-neural-networks-in-tensorflow-96e5d41a39a1
+
+    Parameters:
+    users (list): list of users
+    items (list): list of items
+    ratings (list): list of ratings
+    batch_size (int): the size of the mini batches. By default 256
+
+    Returns:
+    mini_batches (list): a list where each element is a tuple of the form (u, i, r)
+    '''
+
+    mini_batches = []
+
+    all_values = list(zip(users, items, ratings))
+
+    shuffle(all_values)
+
+    shuffled_users, shuffled_items, shuffled_ratings = zip(*all_values)
+
+    num_complete_batches = int(math.floor(len(users)/batch_size))
+
+    for k in range(0, num_complete_batches):
+        mini_batch_users = shuffled_users[k * batch_size : k * batch_size + batch_size]
+        mini_batch_items = shuffled_items[k * batch_size : k * batch_size + batch_size]
+        mini_batch_ratings = shuffled_ratings[k * batch_size : k * batch_size + batch_size]
+
+        mini_batch = (mini_batch_users, mini_batch_items, mini_batch_ratings)
+        mini_batches.append(mini_batch)
+
+    if len(users) % batch_size != 0:
+        mini_batch_users = shuffled_users[num_complete_batches * batch_size: len(users)]
+        mini_batch_items = shuffled_items[num_complete_batches * batch_size: len(users)]
+        mini_batch_ratings = shuffled_ratings[num_complete_batches * batch_size: len(users)]
+
+        mini_batch = (mini_batch_users, mini_batch_items, mini_batch_ratings)
+        mini_batches.append(mini_batch)
+
+    return mini_batches
