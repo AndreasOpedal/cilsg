@@ -19,6 +19,17 @@ class SVD:
         self.V_k = None
         self.X = None
 
+    def set_params(self, params):
+        '''
+        Set the model's parameters by reading the given list of parameters.
+
+        Parameters:
+        params (list): the list of parameters. Note that the list's length must be equal to the number of parameters, and
+                       the ordering must also be the same
+        '''
+
+        self.k = params[0]
+
     def fit(self, X):
         '''
         Computes the SVD composition of the given matrix.
@@ -83,6 +94,19 @@ class ALS:
         self.X = None
         self.P = None
         self.Q = None
+
+    def set_params(self, params):
+        '''
+        Set the model's parameters by reading the given list of parameters.
+
+        Parameters:
+        params (list): the list of parameters. Note that the list's length must be equal to the number of parameters, and
+                       the ordering must also be the same
+        '''
+
+        self.k = params[0]
+        self.l = params[1]
+        self.epochs = params[2]
 
     def fit(self, X):
         '''
@@ -167,6 +191,21 @@ class SVDFunk:
         self.P = None
         self.Q = None
 
+    def set_params(self, params):
+        '''
+        Set the model's parameters by reading the given list of parameters.
+
+        Parameters:
+        params (list): the list of parameters. Note that the list's length must be equal to the number of parameters, and
+                       the ordering must also be the same
+        '''
+
+        self.k = params[0]
+        self.l = params[1]
+        self.eta = params[2]
+        self.batch_size = params[3]
+        self.epochs = params[4]
+
     def fit(self, X):
         '''
         Finds matrices P, Q by optimizing the following objective function:
@@ -197,8 +236,8 @@ class SVDFunk:
                 pu, qi = self.P[u,:], self.Q[i,:]
                 error = self.X[u,i] - pu.dot(qi)
                 # Update step
-                self.P[u,:] = self.P[u,:] + self.eta*(delta*qi - self.l*pu)
-                self.Q[i,:] = self.Q[i,:] + self.eta*(delta*pu - self.l*qi)
+                self.P[u,:] = self.P[u,:] + self.eta*(error*qi - self.l*pu)
+                self.Q[i,:] = self.Q[i,:] + self.eta*(error*pu - self.l*qi)
 
     def transform(self):
         '''
@@ -242,6 +281,21 @@ class SVDBiased:
         self.mu = None
         self.bias_u = None
         self.bias_i = None
+
+    def set_params(self, params):
+        '''
+        Set the model's parameters by reading the given list of parameters.
+
+        Parameters:
+        params (list): the list of parameters. Note that the list's length must be equal to the number of parameters, and
+                       the ordering must also be the same
+        '''
+
+        self.k = params[0]
+        self.l = params[1]
+        self.eta = params[2]
+        self.batch_size = params[3]
+        self.epochs = params[4]
 
     def fit(self, X):
         '''
@@ -339,6 +393,21 @@ class SVDPP:
         self.bias_i = None
         self.Y = None
 
+    def set_params(self, params):
+        '''
+        Set the model's parameters by reading the given list of parameters.
+
+        Parameters:
+        params (list): the list of parameters. Note that the list's length must be equal to the number of parameters, and
+                       the ordering must also be the same
+        '''
+
+        self.k = params[0]
+        self.l = params[1]
+        self.eta = params[2]
+        self.batch_size = params[3]
+        self.epochs = params[4]
+
     def fit(self, X):
         '''
         Finds matrices P, Q, biases, and item factors by optimizing the following objective function:
@@ -431,5 +500,106 @@ class SVDPP:
             X_pred[u,:] += self.bias_i
         for i in range(X_pred.shape[1]):
             X_pred[:,i] += self.bias_u
+
+        return X_pred
+
+class SVDBox:
+    '''
+    An implementation of a box-constrained version of SVD.
+    Because each prediction value must be within a certain range, each vectors P[u,:], Q[i,:] should be within a certain range.
+    '''
+
+    def __init__(self, k=50, l=1, eta=0.01, batch_size=50, epochs=1000, low=1, high=5):
+        '''
+        Initializes the class with the given parameters.
+
+        Parameters:
+        k (int): the number of latent features. By default 50
+        l (float): the strenght of the regularizer. By default 1
+        eta (float): the learning rate. By default 0.01
+        batch_size (int): the number of samples to be used in the SGD step. By default 50
+        epochs (int): the number of iterations. By default 1000
+        low (int): the lower bound for a prediction. By default 1
+        high (int): the upper bound for a prediction. By default 5
+        '''
+
+        self.k = k
+        self.l = l
+        self.eta = eta
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.low = low
+        self.high = high
+        self.X = None
+        self.P = None
+        self.Q = None
+
+    def set_params(self, params):
+        '''
+        Set the model's parameters by reading the given list of parameters.
+
+        Parameters:
+        params (list): the list of parameters. Note that the list's length must be equal to the number of parameters, and
+                       the ordering must also be the same
+        '''
+
+        self.k = params[0]
+        self.l = params[1]
+        self.eta = params[2]
+        self.batch_size = params[3]
+        self.epochs = params[4]
+        self.low = params[5]
+        self.high = params[6]
+
+    def fit(self, X):
+        '''
+        Finds matrices P, Q by optimizing the following objective function:
+
+        H(P, Q) = (X[u,i] - p[u]*q[i])^2 + l*(||p[u]||^2 + ||q[i]||^2)
+
+        Parameters:
+        X (scipy.sparse.dok_matrix): the data matrix, which should not have been imputed
+        '''
+
+        # Read X
+        self.X = X
+
+        # Maximum and minimum entries for P, Q elements
+        min_entry = np.sqrt(self.low/self.k)
+        max_entry = np.sqrt(self.high/self.k)
+
+        # Initialize P, Q (while keeping entries in range)
+        self.P = np.random.uniform(min_entry, max_entry, (self.X.shape[0],self.k))
+        self.Q = np.random.uniform(min_entry, max_entry, (self.X.shape[1],self.k))
+
+        # Extract non zero entries
+        users, items = self.X.nonzero()
+        observed = tuple(zip(users, items))
+
+        for epoch in tqdm(range(self.epochs)):
+            indexes = np.random.randint(low=0, high=len(observed), size=self.batch_size)
+            for index in indexes:
+                # Extract index
+                u, i = observed[index]
+                # Local variables
+                pu, qi = self.P[u,:], self.Q[i,:]
+                error = self.X[u,i] - pu.dot(qi)
+                # Update step
+                self.P[u,:] = self.P[u,:] + self.eta*(error*qi - self.l*pu)
+                self.Q[i,:] = self.Q[i,:] + self.eta*(error*pu - self.l*qi)
+                # Clip the vectors
+                np.clip(self.P[u,:], min_entry, max_entry)
+                np.clip(self.Q[i,:], min_entry, max_entry)
+
+    def transform(self):
+        '''
+        Computes the prediction matrix based on the computed matrices P, Q
+
+        Returns:
+        X_pred (numpy.ndarray): the reconstructed matrix
+        '''
+
+        # Reconstruct matrix
+        X_pred = self.P.dot(self.Q.T)
 
         return X_pred
