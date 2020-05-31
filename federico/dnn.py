@@ -8,7 +8,6 @@ from keras.layers.core import Dense, Lambda, Activation
 from keras.layers import Embedding, Dense, Reshape, Concatenate, Flatten, Dropout, Multiply
 from keras.regularizers import l2
 from surprise import AlgoBase, Dataset, PredictionImpossible
-from utils import random_mini_batches
 from tqdm import tqdm
 
 class NeuMF(AlgoBase):
@@ -16,7 +15,7 @@ class NeuMF(AlgoBase):
     Implementation of the NeuMF model.
     '''
 
-    def __init__(self, n_features=10, n_epochs=10, lr=0.001, gmf_u_reg=0.05, gmf_i_reg=0.05, mlp_u_reg=0.05, mlp_i_reg=0.05, batch_size=256, verbose=True):
+    def __init__(self, n_features=10, n_epochs=10, lr=0.001, gmf_u_reg=0.05, gmf_i_reg=0.05, mlp_u_reg=0.05, mlp_i_reg=0.05, batch_size=32, verbose=True):
         '''
         Initializes the class with the given parameters.
 
