@@ -3,7 +3,7 @@ A file which contains constants, algorithm classes, model instances, and paramet
 '''
 
 from scipy import stats
-from prediction import SGDPP, SGDtum, SGDheu, SGDweighted
+from prediction import SGDbound, SGDheu, SGDweighted
 
 ###############################################################################################
 
@@ -20,6 +20,7 @@ algo_classes = {}
 # Initialize algo_classes
 algo_classes['SGDheu'] = SGDheu
 algo_classes['SGDweighted'] = SGDweighted
+algo_classes['SGDbound'] = SGDbound
 
 ###############################################################################################
 
@@ -29,11 +30,13 @@ instances = {}
 # Initialize instances
 instances['SGDheu'] = {}
 instances['SGDweighted'] = {}
+instances['SGDbound'] = {}
 
 # Index single algorithm classes. Further model instances can manually be added.
-instances['SGDheu'][33] = SGDheu(n_factors=162, n_epochs=60, init_mean=0.2, init_std=0.005, lr_pu=0.015, lr_qi=0.015, alpha_pu=0.1, alpha_qi=0.1, decay_pu=0.05, decay_qi=0.05, reg_pu=0.075, reg_qi=0.075, lambda_bu=25, lambda_bi=1, conf=0.49)
+instances['SGDheu'][33] = SGDheu(n_factors=183, n_epochs=50, init_mean=0, init_std=0.01, lr_pu=0.016, lr_qi=0.016, alpha_pu=0.7, alpha_qi=0.7, decay_pu=0.4, decay_qi=0.4, reg_pu=0.075, reg_qi=0.075, lambda_bu=25, lambda_bi=1, conf=0.49)
 instances['SGDheu'][34] = SGDheu(n_factors=164, n_epochs=74, init_mean=0.20290823068583227, init_std=0.006739247315860849, lr_pu=0.013978749173528232, lr_qi=0.014193006564689255, decay_pu=0.048568935943306406, decay_qi=0.0721391003797361, reg_pu=0.08465510910679358, reg_qi=0.06437173876894195, lambda_bu=19, lambda_bi=4.905163341379891, conf=0.4869291460385132)
-instances['SGDweighted'][1] = SGDweighted(n_factors=20, n_epochs=5, init_mean=0, init_std=0.1, lr_pu=1, lr_qi=1, decay_pu=0, decay_qi=0, reg_pu=0.075, reg_qi=0.075, lambda_bu=25, lambda_bi=0.5, conf=0.49)
+instances['SGDweighted'][1] = SGDweighted(n_factors=100, n_epochs=20, init_mean=0, init_std=0.1, lr_pu=0.01, lr_qi=0.01, decay_pu=0.05, decay_qi=0.05, reg_pu=0.075, reg_qi=0.075, lambda_bu=25, lambda_bi=0.5, conf=0.49)
+instances['SGDbound'][1] = SGDbound(n_factors=100, n_epochs=50, lr_pu=0.015, lr_qi=0.015, reg_pu=1, reg_qi=1, conf=0.49)
 
 ###############################################################################################
 
