@@ -11,6 +11,14 @@ from surprise.model_selection.search import RandomizedSearchCV, GridSearchCV
 from prediction import SGDPP, SGDtum, SGDheu, SGDweighted
 
 def cv(model, data):
+    '''
+    Performs cross-validation, by training on 75% of the provided data.
+    The test metric is RMSE.
+
+    Parameters:
+    model (surprise.AlgoBase): the model to test
+    data (surprise.Dataset): the data to use
+    '''
     # Create data split
     trainset, testset = train_test_split(data, test_size=0.25)
     # Fit model
@@ -21,6 +29,14 @@ def cv(model, data):
     error = accuracy.rmse(predictions)
 
 def target_cv(model, data):
+    '''
+    Performs cross-validation on the ratings, i.e. computes the RMSE for each rating {1,2,3,4,5}.
+    The model in trained on 75% of the provided data.
+
+    Parameters:
+    model (surprise.AlgoBase): the model to test
+    data (surprise.Dataset): the data to use
+    '''
     # Create data split
     trainset, testset = train_test_split(data, test_size=0.25)
     # Fit model
@@ -29,10 +45,26 @@ def target_cv(model, data):
     targeting_rmse(model, testset)
 
 def kfold(model, data, k=10):
+    '''
+    Perform k-fold cross-validation. The test metric is RMSE.
+
+    Parameters:
+    model (surprise.AlgoBase): the model to test
+    data (surprise.Dataset): the data to use
+    k (int): the number of folds. By default 10
+    '''
     # Set up kfold
     dict = cross_validate(model, data, measures=['rmse'], cv=k, n_jobs=-1, verbose=True)
 
-def grid(data, algo_class, k=10):
+def grid(algo_class, data, k=10):
+    '''
+    Performs parameter grid search. See source.py for the parameter grid. The test metric is RMSE.
+
+    Parameters:
+    algo_class (surprise.AlgoBase (class)): the class of algorithm to use in the search
+    data (surprise.Dataset): the data to use
+    k (int): the number of folds. By default 10
+    '''
     # Initialize search
     gs = GridSearchCV(algo_class=algo_class, param_grid=source.param_grid, measures=['rmse'], cv=k, joblib_verbose=100, n_jobs=-1)
     gs.fit(data)
@@ -41,7 +73,16 @@ def grid(data, algo_class, k=10):
     results = pd.DataFrame.from_dict(gs.cv_results)
     print(results)
 
-def random_search(data, algo_class, k=10, n_iters=100):
+def random_search(algo_class, data, k=10, n_iters=100):
+    '''
+    Performs parameter random search. See source.py for the parameter distribution. The test metric is RMSE.
+
+    Parameters:
+    algo_class (surprise.AlgoBase (class)): the class of algorithm to use in the search
+    data (surprise.Dataset): the data to use
+    k (int): the number of folds. By default 10
+    n_iters (int): the number of iterations. By default 100.
+    '''
     # Initialize search
     rs = RandomizedSearchCV(algo_class=algo_class, param_distributions=source.dist_grid, measures=['rmse'], cv=k, joblib_verbose=100, n_iter=n_iters, n_jobs=-1)
     rs.fit(data)
@@ -51,6 +92,16 @@ def random_search(data, algo_class, k=10, n_iters=100):
     print(results)
 
 def dump(model, data, indexes, file_name):
+    '''
+    Dumps the predictions of the selected model on a csv file.
+    Predictions are made on the whole training set.
+
+    Parameters:
+    model (surprise.AlgoBase): the model whose predictions need to be computed
+    data (surprise.Dataset): the training data
+    indexes (list): a list of tuples, where each tuple contains the indexes (u,i) which need to be predicted
+    file_name (str): the name of the csv file
+    '''
     # Set up (whole) training set
     data_all = data.build_full_trainset()
     # Fit model
@@ -115,9 +166,9 @@ if __name__ == '__main__':
     elif args.computation == 'kfold':
         kfold(model, training_set, k=args.k)
     elif args.computation == 'grid':
-        grid(training_set, algo_class, k=args.k)
+        grid(algo_class, training_set, k=args.k)
     elif args.computation == 'random_search':
-        random_search(training_set, algo_class, k=args.k, n_iters=args.n_iters)
+        random_search(algo_class, training_set, k=args.k, n_iters=args.n_iters)
     elif args.computation == 'dump':
         file_name = source.NEW_PREDICTIONS_DIR + args.algo_name.lower() + '-' + str(args.model_num) + '.csv'
         dump(model, data, indexes, file_name)
