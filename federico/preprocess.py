@@ -43,7 +43,7 @@ def build_weights(trainset):
     trainset (surprise.Trainset): the training data
 
     Returns:
-    weights (np.ndarray): the matrix of the weights, with size (trainset.n_users, trainset.n_items)
+    weights (np.ndarray): the matrix of weights with size (trainset.n_users, trainset.n_items)
     '''
 
     # Define weights matrix
@@ -72,3 +72,28 @@ def build_weights(trainset):
 
     # Return weights
     return weights
+
+def items_frequency(trainset):
+    '''
+    Computes the frequency of each item. Frequency is computed as the number of users rating item i over the total number of users.
+
+    Parameters:
+    trainset (surprise.Trainset): the training data
+
+    Returns:
+    freqs (np.ndarray): the vector of frequencies with size (trainset.n_items)
+    '''
+
+    # Define frequency vector
+    freqs = np.zeros(trainset.n_items)
+
+    # Compute unscaled frequencies
+    for _, i, _ in trainset.all_ratings():
+        freqs[i] += 1
+
+    # Scale frequencies
+    for i in range(trainset.n_items):
+        freqs[i] /= trainset.n_users
+
+    # Return frequencies
+    return freqs
