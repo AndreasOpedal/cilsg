@@ -8,11 +8,12 @@ from preprocess import synthetic_ratings, build_weights
 from surprise import Reader, Dataset, accuracy
 from surprise.model_selection import train_test_split, cross_validate
 from surprise.model_selection.search import RandomizedSearchCV, GridSearchCV
+from surprise.model_selection.split import KFold
 from prediction import SGDPP, SGDtum, SGDheu, SGDweighted
 
 def cv(model, data):
     '''
-    Performs cross-validation, by training on 75% of the provided data.
+    Performs cross-validation by training on 75% of the provided data.
     The test metric is RMSE.
 
     Parameters:
@@ -94,7 +95,7 @@ def random_search(algo_class, data, k=10, n_iters=100):
 def dump(model, data, indexes, file_name):
     '''
     Dumps the predictions of the selected model on a csv file.
-    Predictions are made on the whole training set.
+    The model is trained on the whole training set.
 
     Parameters:
     model (surprise.AlgoBase): the model whose predictions need to be computed
@@ -102,10 +103,8 @@ def dump(model, data, indexes, file_name):
     indexes (list): a list of tuples, where each tuple contains the indexes (u,i) which need to be predicted
     file_name (str): the name of the csv file
     '''
-    # Set up (whole) training set
-    data_all = data.build_full_trainset()
     # Fit model
-    model.fit(data_all)
+    model.fit(data)
     # Predictions
     predictions = []
     for index in indexes:
@@ -118,10 +117,10 @@ def dump(model, data, indexes, file_name):
 if __name__ == '__main__':
     # Argparser parameters
     parser = argparse.ArgumentParser(description='Collaborative Filtering')
-    parser.add_argument('computation', type=str, metavar='computation', help='the computation to perform (options: cv, target_cv, kfold, grid, random_search, dump)')
+    parser.add_argument('computation', type=str, metavar='computation', help='the computation to perform (options: cv, target_cv, kfold, grid, random_search, dump, dump_fold)')
     parser.add_argument('algo_name', type=str, metavar='algo_name', help='the name of the algorithm to use (see prediction.pyx)')
     parser.add_argument('--model_num', type=int, default=-1, help='the number of the model (instance of an algo_class) to use (default: -1)')
-    parser.add_argument('--synth', type=bool, default=False, help='whether to add synthetic ratings (default: false)')
+    parser.add_argument('--n_synth', type=int, default=-1, help='the number of synthetic ratings (default: -1, i.e. none)')
     parser.add_argument('--k', type=int, default=10, help='the k for kfold cross-validation (default: 10)')
     parser.add_argument('--n_iters', type=int, default=100, help='the number of iterations to perform in random search (default: 100)')
     parser.add_argument('--verbose', type=bool, default=False, help='whether the algorithm should be verbose (default: false)')
@@ -130,7 +129,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Set seed
-    np.random.seed(666)
+    np.random.seed(source.SEED)
 
     # Read data as a DataFrame
     df = utils.read_data_as_data_frame(source.TRAIN_DATA_PATH)
@@ -138,8 +137,8 @@ if __name__ == '__main__':
     indexes = utils.read_submission_indexes(source.PREDICTION_INDEXES_PATH)
 
     # Add synthetic ratings (if selected)
-    if args.synth:
-        df = synthetic_ratings(df, indexes)
+    if args.n_synth > 0:
+        df = synthetic_ratings(df, indexes, to_add=args.n_synth)
 
     # Set up training set
     reader = Reader()
@@ -171,4 +170,7 @@ if __name__ == '__main__':
         random_search(algo_class, training_set, k=args.k, n_iters=args.n_iters)
     elif args.computation == 'dump':
         file_name = source.NEW_PREDICTIONS_DIR + args.algo_name.lower() + '-' + str(args.model_num) + '.csv'
-        dump(model, data, indexes, file_name)
+        training_set = training_set.build_full_trainset()
+        dump(model, training_set, indexes, file_name)
+    else:
+        print('Invalid computation selected.')
