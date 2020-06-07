@@ -11,7 +11,7 @@ class SGDweighted(AlgoBase):
     The weights are used for balancing reasons: this is because the ratings are imbalanced.
     '''
 
-    def __init__(self, n_factors=20, n_epochs=20, init_mean=0, init_std=0.1, lr_pu=0.01, lr_qi=0.01, decay_pu=0.1, decay_qi=0.1, reg_pu=0.5, reg_qi=0.5, alpha=0.5, lambda_bu=1, lambda_bi=1, low=1, high=5, conf=None, verbose=False):
+    def __init__(self, n_factors=20, n_epochs=20, init_mean=0, init_std=0.1, alpha_pu=0.1, alpha_qi=0.1, reg_pu=0.5, reg_qi=0.5, lambda_bu=1, lambda_bi=1, low=1, high=5, conf=None, verbose=False):
         '''
         Initializes the class with the given parameters.
 
@@ -19,14 +19,11 @@ class SGDweighted(AlgoBase):
         n_factors (int): the number of latent features. By default 20
         n_epochs (int): the number of iterations. By default 20
         init_mean (float): initialization mean. By default 0
+        alpha_pu (float): the dampening to apply to the weights at P. By default 0.1
+        alpha_qi (float): the dampening to apply to the weights at Q. By default 0.1
         init_std (float): initialization standard deviation. By default 0.1
-        lr_pu (float): the learning rate for P. By default 0.01
-        lr_qi (float): the learning rate for P. By default 0.01
-        decay_pu (float): the decay associated with lr_pu. By default 0.1
-        decay_qi (float): the decay associated with lr_pu. By default 0.1
         reg_pu (float): the regularization strength for P. By default 0.5
         reg_qi (float): the regularization strength for Q. By default 0.5
-        alpha (float): the dampening parameter for the item frequencies. By default 0.5
         lambda_bu (float): the regularizer for the initialization of b[u]. By default 1
         lambda_bi (float): the regularizer for the initialization of b[i]. By default 1
         low (int): the lowest rating value. By default 1
@@ -41,13 +38,10 @@ class SGDweighted(AlgoBase):
         self.n_epochs = n_epochs
         self.init_mean = init_mean
         self.init_std = init_std
-        self.lr_pu = lr_pu
-        self.lr_qi = lr_qi
-        self.decay_pu = decay_pu
-        self.decay_qi = decay_qi
+        self.alpha_pu = alpha_pu
+        self.alpha_qi = alpha_qi
         self.reg_pu = reg_pu
         self.reg_qi = reg_qi
-        self.alpha = 0.5
         self.lambda_bu = lambda_bu
         self.lambda_bi = lambda_bi
         self.low = low
@@ -57,7 +51,6 @@ class SGDweighted(AlgoBase):
 
         self.trainset = None
         self.weights = None
-        self.freqs = None
         self.P = None
         self.Q = None
         self.bias_u = None
@@ -80,9 +73,6 @@ class SGDweighted(AlgoBase):
         # Compute weights
         self.weights = build_weights(trainset)
 
-        # Compute frequencies
-        self.freqs = items_frequency(trainset)
-
         # Call SGD
         self.sgd()
 
@@ -99,49 +89,24 @@ class SGDweighted(AlgoBase):
 
         # Cython initialization
         cdef np.ndarray[np.double_t, ndim=2] weights
-        cdef np.ndarray[np.double_t] freqs
-        cdef np.ndarray[np.double_t] c
         cdef np.ndarray[np.double_t, ndim=2] P
         cdef np.ndarray[np.double_t, ndim=2] Q
         cdef np.ndarray[np.double_t] bias_u
         cdef np.ndarray[np.double_t] bias_i
         cdef double mu = self.trainset.global_mean
 
-        cdef np.ndarray[np.double_t] item_grad_pu
-        cdef np.ndarray[np.double_t] item_grad_qi
-
-        cdef double lr_pu = self.lr_pu
-        cdef double lr_qi = self.lr_qi
-        cdef double decay_pu = self.decay_pu
-        cdef double decay_qi = self.decay_qi
+        cdef double alpha_pu = self.alpha_pu
+        cdef double alpha_qi = self.alpha_qi
         cdef double reg_pu = self.reg_pu
         cdef double reg_qi = self.reg_qi
-        cdef double alpha = self.alpha
         cdef double lambda_bu = self.lambda_bu
         cdef double lambda_bi = self.lambda_bi
 
-        cdef double lr0_pu = lr_pu
-        cdef double lr0_qi = lr_qi
-
-        cdef int u, i, f, j
-        cdef double r, rui, err, dot, puf, qif, c0, den_freqs
+        cdef int u, i, f
+        cdef double r, err, dot, puf, qif
 
         # Set weights and frequencies
         weights = self.weights
-        freqs = self.freqs
-
-        # Initialize c
-        c = np.zeros(self.trainset.n_items)
-
-        # Compute c0
-        c0 = np.mean(weights)
-
-        # Compute c
-        for i in range(self.trainset.n_items):
-            den_freqs = 0
-            for j in range(self.trainset.n_items):
-                den_freqs += (freqs[j]**alpha)
-            c[i] = c0*((freqs[i]**alpha)/den_freqs)
 
         # Initialize P, Q (while keeping entries in range)
         P = np.random.normal(self.init_mean, self.init_std, (self.trainset.n_users,self.n_factors))
@@ -166,28 +131,16 @@ class SGDweighted(AlgoBase):
         for current_epoch in range(self.n_epochs):
             if self.verbose:
                 print('Processing epoch {}'.format(current_epoch+1))
-            # Decay
-            lr_pu = lr0_pu/(1 + decay_pu*current_epoch)
-            lr_qi = lr0_qi/(1 + decay_qi*current_epoch)
             for u, i, r in self.trainset.all_ratings():
                 # Compute estimated rating
                 dot = 0
                 for f in range(self.n_factors):
                     dot += Q[i,f]*P[u,f]
-                rui = mu + bias_u[u] + bias_i[i] + dot
-                # Items gradients
-                item_grad_pu = np.zeros(self.n_factors)
-                item_grad_qi = np.zeros(self.n_factors)
-                for j, _ in self.trainset.ur[u]:
-                    if j != i:
-                        for f in range(self.n_factors):
-                            item_grad_pu[f] += c[i]*Q[i,f]*rui
-                            item_grad_qi[f] += c[i]*P[u,f]*rui
-                err = r - rui
+                err = r - (mu + bias_u[u] + bias_i[i] + dot)
                 for f in range(self.n_factors):
                     puf, qif = P[u,f], Q[i,f]
-                    P[u,f] += lr_pu*(weights[u,i]*err*qif - item_grad_pu[f] - reg_pu*puf)
-                    Q[i,f] += lr_qi*(weights[u,i]*err*puf - item_grad_qi[f] - reg_qi*qif)
+                    P[u,f] += alpha_pu*weights[u,i]*(err*qif - reg_pu*puf)
+                    Q[i,f] += alpha_qi*weights[u,i]*(err*puf - reg_qi*qif)
 
         # Write parameters
         self.P = P
@@ -381,15 +334,13 @@ class SGDheu(AlgoBase):
                     dot += Q[i,f]*P[u,f]
                 err = r - (mu + bias_u[u] + bias_i[i] + dot)
                 for f in range(self.n_factors):
-                    # Temporary variables
                     puf, qif = P[u,f], Q[i,f]
-                    gradient_pu, gradient_qi = (err*qif - reg_pu*puf), (err*puf - reg_qi*qif)
-                    # Update P, Q
-                    P[u,f] += lr_pu*gradient_pu + alpha_pu*delta_g_pu[u,f]
-                    Q[i,f] += lr_qi*gradient_qi + alpha_qi*delta_g_qi[i,f]
                     # Update momentum
-                    delta_g_pu[u,f] = alpha_pu*delta_g_pu[u,f] + lr_pu*gradient_pu
-                    delta_g_qi[i,f] = alpha_qi*delta_g_qi[i,f] + lr_qi*gradient_qi
+                    delta_g_pu[u,f] = alpha_pu*delta_g_pu[u,f] + lr_pu*(err*qif - reg_pu*puf)
+                    delta_g_qi[i,f] = alpha_qi*delta_g_qi[i,f] + lr_qi*(err*puf - reg_qi*qif)
+                    # Update P, Q
+                    P[u,f] += delta_g_pu[u,f]
+                    Q[i,f] += delta_g_qi[i,f]
 
         # Write parameters
         self.P = P
