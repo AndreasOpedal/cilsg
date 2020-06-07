@@ -53,18 +53,17 @@ def build_weights(trainset):
     freqs = np.zeros(5)
 
     # Compute frequencies
-    for u, i, r in trainset.all_ratings():
+    for _, _, r in trainset.all_ratings():
         freqs[int(r)-1] += 1
 
     # Compute sum of frequencies
-    sum = freqs[0] + freqs[1] + freqs[2] + freqs[3] + freqs[4]
+    sum = np.sum(freqs)
 
-    # Rescale frequencies
-    freqs[0] /= sum
-    freqs[1] /= sum
-    freqs[2] /= sum
-    freqs[3] /= sum
-    freqs[4] /= sum
+    # Divide by sum
+    freqs /= sum
+
+    # Flip array
+    freqs = np.flip(freqs)
 
     # Associate frequencies to weights
     for u, i, r in trainset.all_ratings():
