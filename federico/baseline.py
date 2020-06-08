@@ -5,7 +5,6 @@ The algorithms are implementated with the help of the Surprise package, which si
 and cross-validation.
 
 The implemented algorithms are:
-- Mean
 - ALS
 '''
 
