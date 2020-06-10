@@ -10,15 +10,17 @@ def targeting_rmse(model, testset):
     testset (list): the test set
     '''
 
-    # Array holding values
+    # Arrays holding values
     rmses = np.zeros(5)
+    errors = np.zeros(5)
 
     # Compute errors
     for u, i, r in testset:
         rui = model.predict(u, i).est # prediction
-        rmses[r-1] += r - rui
+        rmses[int(r)-1] += (r - rui)**2
+        errors[int(r)-1] += 1
 
     # Compute RMSEs
     for r in range(5):
-        rmse = np.sqrt((rmses[r-1]**2)/len(errors))
-        print('Rating: {}, RMSE: {}, #: {}'.format(key, rmse, len(errors)))
+        rmse = np.sqrt(rmses[int(r)-1]/errors[int(r)-1])
+        print('Rating: {}, RMSE: {}, #: {}'.format(int(r)+1, rmse, int(errors[int(r)-1])))

@@ -8,7 +8,6 @@ The implemented algorithms are:
 - ALS
 '''
 
-cimport numpy as np
 import numpy as np
 import math
 from preprocess import build_weights, items_frequency
@@ -19,7 +18,7 @@ class ALS(AlgoBase):
     Implementation of the ALS algorithm
     '''
 
-    def __init__(self, n_factors=160, n_epochs=20, init_mean=0, init_std=0.1, reg=0.5, low=1, high=5, conf=None, verbose=True):
+    def __init__(self, n_factors=160, n_epochs=20, init_mean=0, init_std=0.1, reg=1, low=1, high=5, conf=None, verbose=True):
         '''
         Initializes the class with the given parameters.
 
@@ -28,7 +27,7 @@ class ALS(AlgoBase):
         n_epochs (int): the number of iterations. By default 20
         init_mean (float): initialization mean. By default 0
         init_std (float): initialization standard deviation. By default 0.1
-        reg (float): the regularization strength. By default 0.5
+        reg (float): the regularization strength. By default 1
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
@@ -79,7 +78,7 @@ class ALS(AlgoBase):
         self.Q = np.random.normal(self.init_mean, self.init_std, (self.trainset.n_items,self.n_factors))
 
         # Initialize identity
-        indentity = np.identity((self.n_factors,self.n_factors))
+        identity = np.identity(self.n_factors)
 
         # Optimize
         for current_epoch in range(self.n_epochs):
@@ -87,20 +86,30 @@ class ALS(AlgoBase):
                 print('Processing epoch {}'.format(current_epoch+1))
             for u in range(self.trainset.n_users):
                 temp_pq = np.zeros((self.n_factors,self.n_factors))
-                temp_r = np.zeros((self.n_factors,self.n_factors))
+                temp_r = np.zeros(self.n_factors)
                 for i, r in self.trainset.ur[u]:
                     temp_pq += np.dot(self.Q[i,:], self.Q[i,:].T)
                     temp_r += r*self.Q[i,:]
-                temp_pq += self.reg*indentity
-                self.P[u,] = np.dot(np.linalg.inv(temp_pq), temp_r)
+                temp_pq += self.reg*identity
+                try:
+                    self.P[u,:] = np.dot(np.linalg.inv(temp_pq), temp_r)
+                except np.linalg.LinAlgError as err:
+                    if 'Singular matrix' in str(err):
+                        print('Singular matrix (P): skipping iteration')
+                        break
             for i in range(self.trainset.n_items):
                 temp_pq = np.zeros((self.n_factors,self.n_factors))
-                temp_r = np.zeros((self.n_factors,self.n_factors))
+                temp_r = np.zeros(self.n_factors)
                 for u, r in self.trainset.ir[i]:
                     temp_pq += np.dot(self.P[u,:], self.P[u,:].T)
-                    temp_r += r*self.Q[u,:]
-                temp_pq += self.reg*indentity
-                self.Q[i,] = np.dot(np.linalg.inv(temp_pq), temp_r)
+                    temp_r += r*self.P[u,:]
+                temp_pq += self.reg*identity
+                try:
+                    self.Q[i,:] = np.dot(np.linalg.inv(temp_pq), temp_r)
+                except np.linalg.LinAlgError as err:
+                    if 'Singular matrix' in str(err):
+                        print('Singular matrix (Q): skipping iteration')
+                        break
 
     def estimate(self, u, i):
         '''
