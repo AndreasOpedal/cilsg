@@ -573,7 +573,7 @@ class SGDPP(AlgoBase):
     An implementation of SVD++ via stochastic gradient descent.
     '''
 
-    def __init__(self, n_factors=100, n_epochs=20, init_mean=0, init_std=0.1, lr_pu=0.01, lr_qi=0.01, lr_yj=0.01, reg_pu=0.5, reg_qi=0.5, reg_yj=0.5, decay_pu=0.01, decay_qi=0.01, decay_yj=0.01, lambda_bu=1, lambda_bi=1, low=1, high=5, conf=None, verbose=False):
+    def __init__(self, n_factors=100, n_epochs=20, init_mean=0, init_std=0.1, lr_pu=0.01, lr_qi=0.01, lr_yj=0.01, alpha_pu=0.01, alpha_qi=0.01, alpha_yj=0.01, decay_pu=0.01, decay_qi=0.01, decay_yj=0.01, reg_pu=0.5, reg_qi=0.5, reg_yj=0.5, lambda_bu=1, lambda_bi=1, low=1, high=5, conf=None, verbose=False):
         '''
         Initializes the class with the given parameters.
 
@@ -585,13 +585,15 @@ class SGDPP(AlgoBase):
         lr_pu (float): the learning rate for P. By default 0.01
         lr_qi (float): the learning rate for Q. By default 0.01
         lr_yj (float): the learning rate for the item factors. By default 0.01
-        reg_pu (float): the regularization term for P. By default 0.5
-        reg_qi (float): the regularization term for Q. By default 0.5
-        reg_yj (float): the regularization term of the item factors. By default 0.5
-        decay (float): the decay of the learning rate. By default 0.01
+        alpha_pu (float): the strength of the gradient momentum of P. By default 0.01
+        alpha_qi (float): the strength of the gradient momentum of Q. By default 0.01
+        alpha_yj (float): the strength of the gradient momentum of Y. By default 0.01
         decay_pu (float): the decay of the learning rate of P. By default 0.01
         decay_qi (float): the decay of the learning rate of P. By default 0.01
         decay_yj (float): the decay of the learning rate of the item factors. By default 0.01
+        reg_pu (float): the regularization term for P. By default 0.5
+        reg_qi (float): the regularization term for Q. By default 0.5
+        reg_yj (float): the regularization term of the item factors. By default 0.5
         lambda_bu (float): the regularizer for the initialization of b[u]. By default 1
         lambda_bi (float): the regularizer for the initialization of b[i]. By default 1
         low (int): the lower bound for a prediction. By default 1
@@ -609,6 +611,9 @@ class SGDPP(AlgoBase):
         self.lr_pu = lr_pu
         self.lr_qi = lr_qi
         self.lr_yj = lr_yj
+        self.alpha_pu = alpha_pu
+        self.alpha_qi = alpha_qi
+        self.alpha_yj = alpha_yj
         self.reg_pu = reg_pu
         self.reg_qi = reg_qi
         self.reg_yj = reg_yj
@@ -666,22 +671,28 @@ class SGDPP(AlgoBase):
         cdef np.ndarray[np.double_t, ndim=2] Q
         cdef np.ndarray[np.double_t, ndim=2] Y
         cdef np.ndarray[np.double_t] u_impl_fdb
+        cdef double mu = self.trainset.global_mean
 
-        cdef int u, i, j, f
+        cdef np.ndarray[np.double_t, ndim=2] delta_g_pu
+        cdef np.ndarray[np.double_t, ndim=2] delta_g_qi
+        cdef np.ndarray[np.double_t, ndim=2] delta_g_yj
+
+        cdef int u, i, f, j
         cdef int current_epoch
         cdef double r, err, dot, puf, qif, sqrt_Iu, _
-        cdef double mu = self.trainset.global_mean
 
         cdef double lr_pu = self.lr_pu
         cdef double lr_qi = self.lr_qi
         cdef double lr_yj = self.lr_yj
-        cdef double reg_pu = self.reg_pu
-        cdef double reg_qi = self.reg_qi
-        cdef double reg_yj = self.reg_yj
-        cdef double decay = self.decay
+        cdef double alpha_pu = self.alpha_pu
+        cdef double alpha_qi = self.alpha_qi
+        cdef double alpha_yj = self.alpha_yj
         cdef double decay_pu = self.decay_pu
         cdef double decay_qi = self.decay_qi
         cdef double decay_yj = self.decay_yj
+        cdef double reg_pu = self.reg_pu
+        cdef double reg_qi = self.reg_qi
+        cdef double reg_yj = self.reg_yj
         cdef double lambda_bu = self.lambda_bu
         cdef double lambda_bi = self.lambda_bi
 
@@ -710,14 +721,19 @@ class SGDPP(AlgoBase):
                 bias_u[u] += r - mu - bias_i[i]
             bias_u[u] /= (lambda_bi + len(neigh_u))
 
+        # Initialize momentum
+        delta_g_pu = np.zeros((self.trainset.n_users,self.n_factors))
+        delta_g_qi = np.zeros((self.trainset.n_items,self.n_factors))
+        delta_g_yj = np.zeros((self.trainset.n_items,self.n_factors))
+
         # Optimize
         for current_epoch in range(self.n_epochs):
             if self.verbose:
                 print('Processing epoch {}'.format(current_epoch+1))
             # Decay of learning rate
             lr_pu = lr0_pu/(1 + decay_pu*current_epoch)
-            lr_qi = lr0_qi/(1 + decay_pu*current_epoch)
-            lr_yj = lr0_yj/(1 + decay_pu*current_epoch)
+            lr_qi = lr0_qi/(1 + decay_qi*current_epoch)
+            lr_yj = lr0_yj/(1 + decay_yj*current_epoch)
             for u, i, r in self.trainset.all_ratings():
                 Iu = [j for (j, _) in self.trainset.ur[u]]
                 sqrt_Iu = np.sqrt(len(Iu))
@@ -731,10 +747,17 @@ class SGDPP(AlgoBase):
                 err = r - (mu + bias_u[u] + bias_i[i] + dot)
                 for f in range(self.n_factors):
                     puf, qif = P[u,f], Q[i,f]
-                    P[u,f] += lr_pu*(err*qif - reg_pu*puf)
-                    Q[i,f] += lr_qi*(err*(puf + u_impl_fdb[f]) - reg_qi*qif)
+                    # Update mometum
+                    delta_g_pu[u,f] = alpha_pu*delta_g_pu[u,f] + lr_pu*(err*qif - reg_pu*puf)
+                    delta_g_qi[i,f] = alpha_qi*delta_g_qi[i,f] + lr_qi*(err*(puf + u_impl_fdb[f]) - reg_qi*qif)
+                    # Update P, Q
+                    P[u,f] += delta_g_pu[u,f]
+                    Q[i,f] += delta_g_qi[i,f]
                     for j in Iu:
-                        Y[j,f] += lr_yj*(err*(qif/sqrt_Iu) - reg_yj*Y[j,f])
+                        # Update mometum
+                        delta_g_yj[j,f] = alpha_yj*delta_g_yj[j,f] + lr_yj*(err*(qif/sqrt_Iu) - reg_yj*Y[j,f])
+                        # Update Y
+                        Y[j,f] += delta_g_yj[j,f]
 
         # Write parameters
         self.P = P
