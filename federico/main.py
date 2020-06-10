@@ -9,7 +9,6 @@ from surprise import Reader, Dataset, accuracy
 from surprise.model_selection import train_test_split, cross_validate
 from surprise.model_selection.search import RandomizedSearchCV, GridSearchCV
 from surprise.model_selection.split import KFold
-from prediction import SGDPP, SGDtum, SGDheu, SGDweighted
 
 def cv(model, data):
     '''
@@ -118,7 +117,7 @@ if __name__ == '__main__':
     # Argparser parameters
     parser = argparse.ArgumentParser(description='Collaborative Filtering')
     parser.add_argument('computation', type=str, metavar='computation', help='the computation to perform (options: cv, target_cv, kfold, grid, random_search, dump, dump_fold)')
-    parser.add_argument('algo_name', type=str, metavar='algo_name', help='the name of the algorithm to use (see names of classes in factorization.pyx)')
+    parser.add_argument('algo_name', type=str, metavar='algo_name', help='the name of the algorithm to use (see names of classes in factorization.pyx and baseline.py)')
     parser.add_argument('--model_num', type=int, default=-1, help='the number of the model (instance of an algo_class) to use (default: -1)')
     parser.add_argument('--n_synth', type=int, default=-1, help='the number of synthetic ratings (default: -1, i.e. none)')
     parser.add_argument('--k', type=int, default=10, help='the k for kfold cross-validation (default: 10)')

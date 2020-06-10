@@ -3,7 +3,8 @@ A file which contains constants, algorithm classes, model instances, and paramet
 '''
 
 from scipy import stats
-from prediction import SGDbound, SGDheu, SGDweighted
+from factorization import SGDbound, SGDheu, SGDweighted, SGDPP
+from baseline import ALS
 
 ###############################################################################################
 
@@ -22,6 +23,8 @@ algo_classes = {}
 algo_classes['SGDheu'] = SGDheu
 algo_classes['SGDweighted'] = SGDweighted
 algo_classes['SGDbound'] = SGDbound
+algo_classes['SGDPP'] = SGDPP
+algo_classes['ALS'] = ALS
 
 ###############################################################################################
 
@@ -32,6 +35,8 @@ instances = {}
 instances['SGDheu'] = {}
 instances['SGDweighted'] = {}
 instances['SGDbound'] = {}
+instances['SGDPP'] = {}
+instances['ALS'] = {}
 
 # Index single algorithm classes. Further model instances can manually be added.
 instances['SGDheu'][48] = SGDheu(n_factors=192, n_epochs=95, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0, decay_qi=0.5, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, conf=None)
@@ -48,6 +53,8 @@ instances['SGDheu'][38] = SGDheu(n_factors=162, n_epochs=20, init_mean=0.2, init
 instances['SGDheu'][37] = SGDheu(n_factors=100, n_epochs=42, init_mean=0.2, init_std=0.005, lr_pu=0.015, lr_qi=0.015, alpha_pu=0.25, alpha_qi=0.25, decay_pu=0.05, decay_qi=0.05, reg_pu=0.07, reg_qi=0.07, lambda_bu=25, lambda_bi=0.5, conf=0.49)
 instances['SGDweighted'][2] = SGDweighted(n_factors=160, n_epochs=4, init_mean=0.2, init_std=0.005, alpha_pu=1, alpha_qi=1, reg_pu=1, reg_qi=1, lambda_bu=10, lambda_bi=5, conf=None)
 instances['SGDbound'][1] = SGDbound(n_factors=100, n_epochs=50, lr_pu=0.015, lr_qi=0.015, reg_pu=10000, reg_qi=10000, conf=None)
+instances['SGDPP'][1] = SGDPP(n_factors=160, n_epochs=10, init_mean=0, init_std=0.1, lr_pu=0.001, lr_qi=0.001, lr_yj=0.001, alpha_pu=0.3, alpha_qi=0.3, alpha_yj=0.3, decay_pu=0.03, decay_qi=0.03, decay_yj=0.03, reg_pu=0.08, reg_qi=0.08, reg_yj=0.01, lambda_bu=25, lambda_bi=0.5, conf=None)
+instances['ALS'][1] = ALS()
 
 ###############################################################################################
 
