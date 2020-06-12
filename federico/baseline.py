@@ -12,7 +12,7 @@ The implemented algorithms are:
 
 import numpy as np
 import math
-from preprocess import build_weights, items_frequency
+from preprocess import build_weights
 from surprise import AlgoBase, Dataset, PredictionImpossible
 
 class Mean(AlgoBase):
@@ -122,22 +122,22 @@ class SVD(AlgoBase):
             X[u,i] = r
 
         # Impute empty ratings (if instructed)
-        if impute_strategy == 'mean':
+        if self.impute_strategy == 'mean':
             X[X==0] = self.trainset.global_mean
-        elif impute_strategy == 'median':
+        elif self.impute_strategy == 'median':
             median = np.median(X)
             X[X==0] = median
 
         # Compute the SVD of X
         U, S, Vt = np.linalg.svd(X)
-        D = np.zeros(shape=(S.shape[0], S.shape[0])) # create diagonal matrix D
-        np.fill_diagonal(D, S) # fill D with S
+        D = np.zeros(shape=(S.shape[0],S.shape[0])) # create diagonal matrix D
+        np.fill_diagonal(D,S) # fill D with S
 
         # Square root of D
         D = np.sqrt(D)
 
         # Pad D
-        D_p = np.append(D, np.zeros((U.shape[0]-D.shape[0], D.shape[0])), axis=0)
+        D_p = np.append(D, np.zeros((U.shape[0]-D.shape[0],D.shape[0])), axis=0)
 
         # Scale P, Qt
         U = U.dot(D_p)
