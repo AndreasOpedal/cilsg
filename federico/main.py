@@ -4,7 +4,7 @@ import pandas as pd
 import utils
 import source
 from model_selection import targeting_rmse
-from preprocess import synthetic_ratings, build_weights
+from preprocess import synthetic_ratings
 from surprise import Reader, Dataset, accuracy
 from surprise.model_selection import train_test_split, cross_validate
 from surprise.model_selection.search import RandomizedSearchCV, GridSearchCV

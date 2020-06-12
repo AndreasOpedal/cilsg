@@ -43,7 +43,7 @@ def build_weights(trainset):
     trainset (surprise.Trainset): the training data
 
     Returns:
-    weights (np.ndarray): the matrix of weights with size (trainset.n_users, trainset.n_items)
+    weights (numpy.ndarray): the matrix of weights with size (trainset.n_users, trainset.n_items)
     '''
 
     # Define weights matrix
@@ -56,11 +56,8 @@ def build_weights(trainset):
     for _, _, r in trainset.all_ratings():
         freqs[int(r)-1] += 1
 
-    # Compute sum of frequencies
-    sum = np.sum(freqs)
-
-    # Divide by sum
-    freqs /= sum
+    # Rescale frequencies
+    freqs /= np.sum(freqs)
 
     # Flip array
     freqs = np.flip(freqs)
@@ -72,27 +69,33 @@ def build_weights(trainset):
     # Return weights
     return weights
 
-def items_frequency(trainset):
+def over_sample(trainset):
     '''
-    Computes the frequency of each item. Frequency is computed as the number of users rating item i over the total number of users.
+    Computes for each rating belonging to {1,2,3,4,5} the number of times a tuple (u,i,r) should be iterated over in the
+    optimization procedure. The number of repetitions is proportional to the maximum number of times a rating appears.
+    For example, if the rating 1 appears 10 times, and the rating 5 has the maximum number of appearances with 100, then
+    each rating 1 will be iterated over 100/10=10 times in the optimization procedure.
 
     Parameters:
     trainset (surprise.Trainset): the training data
 
     Returns:
-    freqs (np.ndarray): the vector of frequencies with size (trainset.n_items)
+    reps (numpy.ndarray): the array where each entry holds the number of repetitions for a given rating
     '''
 
-    # Define frequency vector
-    freqs = np.zeros(trainset.n_items)
+    # Repetitions array
+    reps = np.zeros(5)
 
-    # Compute unscaled frequencies
-    for _, i, _ in trainset.all_ratings():
-        freqs[i] += 1
+    # Fill reps
+    for _, _, r in trainset.all_ratings():
+        reps[int(r)-1] += 1
 
-    # Scale frequencies
-    for i in range(trainset.n_items):
-        freqs[i] /= trainset.n_users
+    # Compute maximum number rating
+    max_num = np.max(reps)
 
-    # Return frequencies
-    return freqs
+    # Compute final number of repetitions
+    for r in range(5):
+        reps[r] = int(max_num/reps[r])
+
+    # Return repetitions array
+    return reps
