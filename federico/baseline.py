@@ -5,6 +5,8 @@ The algorithms are implementated with the help of the Surprise package, which si
 and cross-validation.
 
 The implemented algorithms are:
+- Mean
+- SVD
 - ALS
 '''
 
@@ -13,9 +15,176 @@ import math
 from preprocess import build_weights, items_frequency
 from surprise import AlgoBase, Dataset, PredictionImpossible
 
+class Mean(AlgoBase):
+    '''
+    Basic approach which predicts empty ratings with the ratings global mean.
+    '''
+
+    def __init__(self):
+        '''
+        Initializes the class with the given parameters.
+        '''
+
+        self.trainset = None
+        self.mu = None
+
+    def fit(self, trainset):
+        '''
+        Fits the model to the provided dataset
+
+        Parameters:
+        trainset (surprise.Trainset): the training set to be fitted
+        '''
+
+        AlgoBase.fit(self, trainset)
+
+        # Read training set
+        self.trainset = trainset
+
+        # Compute global mean
+        self.mu = self.trainset.global_mean
+
+        return self
+
+    def estimate(self, u, i):
+        '''
+        Returns the prediction for the given user and item
+
+        Parameters
+        u (int): the user index
+        i (int): the item index
+
+        Retuns:
+        rui (float): the prediction
+        '''
+
+        known_user = self.trainset.knows_user(u)
+        known_item = self.trainset.knows_item(i)
+
+        if known_user and known_item:
+            # Compute prediction
+            rui = self.mu
+        else:
+            raise PredictionImpossible('User and item are unknown.')
+
+        return rui
+
+class SVD(AlgoBase):
+    '''
+    Implementation of SVD.
+    '''
+
+    def __init__(self, n_factors=160, impute_strategy=None):
+        '''
+        Initializes the class with the given parameters.
+
+        Parameters:
+        n_factors (int): the number of latent features. By default 100
+        impute_strategy (string): the strategy to use to impute the non-rated items. The options are None (0), 'mean', and
+                                  'median'. By default None
+        '''
+
+        self.n_factors = n_factors
+        self.impute_strategy = impute_strategy
+
+        self.trainset = None
+        self.U_k = None
+        self.V_k = None
+
+    def fit(self, trainset):
+        '''
+        Fits the model to the provided dataset
+
+        Parameters:
+        trainset (surprise.Trainset): the training set to be fitted
+        '''
+
+        AlgoBase.fit(self, trainset)
+
+        # Read training set
+        self.trainset = trainset
+
+        # Call SVD
+        self.svd()
+
+        return self
+
+    def svd(self):
+        '''
+        Finds matrices P, Q by computing the SVD relative to the training data.
+        '''
+
+        # Build the training matrix
+        X = np.zeros((self.trainset.n_users,self.trainset.n_items))
+
+        # Fill the training matrix
+        for u, i, r in self.trainset.all_ratings():
+            X[u,i] = r
+
+        # Impute empty ratings (if instructed)
+        if impute_strategy == 'mean':
+            X[X==0] = self.trainset.global_mean
+        elif impute_strategy == 'median':
+            median = np.median(X)
+            X[X==0] = median
+
+        # Compute the SVD of X
+        U, S, Vt = np.linalg.svd(X)
+        D = np.zeros(shape=(S.shape[0], S.shape[0])) # create diagonal matrix D
+        np.fill_diagonal(D, S) # fill D with S
+
+        # Square root of D
+        D = np.sqrt(D)
+
+        # Pad D
+        D_p = np.append(D, np.zeros((U.shape[0]-D.shape[0], D.shape[0])), axis=0)
+
+        # Scale P, Qt
+        U = U.dot(D_p)
+        V = D.dot(Vt.T)
+
+        # Select vectors from U, V
+        self.U_k = U[:,:self.n_factors]
+        self.V_k = V[:,:self.n_factors]
+
+    def estimate(self, u, i):
+        '''
+        Returns the prediction for the given user and item
+
+        Parameters
+        u (int): the user index
+        i (int): the item index
+
+        Retuns:
+        rui (float): the prediction
+        '''
+
+        known_user = self.trainset.knows_user(u)
+        known_item = self.trainset.knows_item(i)
+
+        if known_user and known_item:
+            # Compute prediction
+            rui = np.dot(self.U_k[u,:], self.V_k[i,:])
+            # Clip result
+            if rui < self.low:
+                rui = self.low
+            if rui > self.high:
+                rui = self.high
+            if self.conf is not None:
+                # Intify prediction
+                delta = 1-(rui%1)
+                if 0.5-delta >= self.conf:
+                    rui = math.ceil(rui)
+                elif delta-0.5 >= self.conf:
+                    rui = math.floor(rui)
+        else:
+            raise PredictionImpossible('User and item are unknown.')
+
+        return rui
+
 class ALS(AlgoBase):
     '''
-    Implementation of the ALS algorithm
+    Implementation of ALS.
     '''
 
     def __init__(self, n_factors=160, n_epochs=20, init_mean=0, init_std=0.1, reg=1, low=1, high=5, conf=None, verbose=True):
