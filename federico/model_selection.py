@@ -22,5 +22,5 @@ def targeting_rmse(model, testset):
 
     # Compute RMSEs
     for r in range(5):
-        rmse = np.sqrt(rmses[int(r)-1]/errors[int(r)-1])
-        print('Rating: {}, RMSE: {}, #: {}'.format(int(r)+1, rmse, int(errors[int(r)-1])))
+        rmse = np.sqrt(rmses[int(r)]/errors[int(r)])
+        print('Rating: {}, RMSE: {}, #: {}'.format(int(r), rmse, int(errors[int(r)])))
