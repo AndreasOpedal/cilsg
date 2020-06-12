@@ -4,213 +4,20 @@ This file contains an array of factorization methods based on SVD being solved v
 The algorithms are implementated with the help of the Surprise package, which significantly helps with data management
 and cross-validation.
 
-The optimization is written in cython, in order to speed up the costly computations.
+The optimization is written in Cython, in order to speed up the costly computations.
+This approach is similar to the one used in the Surprise package algorithms.
 
 All algorithms follow the same structure as Simon Funk's SVD. The implemented algorithms are:
-- SGDweighted, where each rating(u,i) is weighted according to its representation in the training data
 - SGDheu, where biases are added according to heuristics
-- SGDbound, where heavy regularization is imposed in order for the prediction to remain within a specified bound
 - SGDPP2, an implentation of Koren's SVD++ using heuristics
 '''
 
 cimport numpy as np
 import numpy as np
 import math
-from preprocess import build_weights
+from preprocess import over_sample
 from surprise import AlgoBase, Dataset, PredictionImpossible
 from baseline import SVD
-
-class SGDweighted(AlgoBase):
-    '''
-    Implementation of a weighted, heuristic version of SVD. The heuristics are applied to the biases, while the weighted model
-    is based on the paper on fast matrix factorization from He et al. (2016).
-    The weights are used for balancing reasons: this is because the ratings are imbalanced.
-    '''
-
-    def __init__(self, n_factors=100, n_epochs=20, init_mean=0, init_std=0.1, lr_pu=0.1, lr_qi=0.1, decay_pu=0.1, decay_qi=0.1, reg_pu=0.5, reg_qi=0.5, lambda_bu=1, lambda_bi=1, low=1, high=5, conf=None, verbose=False):
-        '''
-        Initializes the class with the given parameters.
-
-        Parameters:
-        n_factors (int): the number of latent features. By default 100
-        n_epochs (int): the number of iterations. By default 20
-        init_mean (float): initialization mean. By default 0
-        lr_pu (float): the learning rate for P. By default 0.1
-        lr_qi (float): the learning rate for Q. By default 0.1
-        decay_pu (float): the decay associated with lr_pu. By default 0.1
-        decay_qi (float): the decay associated with lr_pu. By default 0.1
-        init_std (float): initialization standard deviation. By default 0.1
-        reg_pu (float): the regularization strength for P. By default 0.5
-        reg_qi (float): the regularization strength for Q. By default 0.5
-        lambda_bu (float): the regularizer for the initialization of b[u]. By default 1
-        lambda_bi (float): the regularizer for the initialization of b[i]. By default 1
-        low (int): the lowest rating value. By default 1
-        high (int): the highest rating value. By default 5
-        conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
-        verbose (boolean): whether the algorithm should be verbose. By default False
-        '''
-
-        AlgoBase.__init__(self)
-
-        self.n_factors = n_factors
-        self.n_epochs = n_epochs
-        self.init_mean = init_mean
-        self.init_std = init_std
-        self.lr_pu = lr_pu
-        self.lr_qi = lr_qi
-        self.decay_pu = decay_pu
-        self.decay_qi = decay_qi
-        self.reg_pu = reg_pu
-        self.reg_qi = reg_qi
-        self.lambda_bu = lambda_bu
-        self.lambda_bi = lambda_bi
-        self.low = low
-        self.high = high
-        self.conf = conf
-        self.verbose = verbose
-
-        self.trainset = None
-        self.weights = None
-        self.P = None
-        self.Q = None
-        self.bias_u = None
-        self.bias_i = None
-        self.mu = None
-
-    def fit(self, trainset):
-        '''
-        Fits the model to the provided dataset
-
-        Parameters:
-        trainset (surprise.Trainset): the training set to be fitted
-        '''
-
-        AlgoBase.fit(self, trainset)
-
-        # Read training set
-        self.trainset = trainset
-
-        # Compute weights
-        self.weights = build_weights(self.trainset)
-
-        # Call SGD
-        self.sgd()
-
-        return self
-
-    def sgd(self):
-        '''
-        Finds matrices P, Q by optimizing the following objective function:
-
-        H(P,Q)[u,i] = weights[u,i]*(r[u,i] - mu - b[u] - b[i] - p[u]*q[i])^2 + (reg_pu*||p[u]||^2 + reg_qi*||q[i]||^2)
-
-        where b[u], b[i] are estimated via heuristics.
-        '''
-
-        # Cython initialization
-        cdef np.ndarray[np.double_t, ndim=2] weights
-        cdef np.ndarray[np.double_t, ndim=2] P
-        cdef np.ndarray[np.double_t, ndim=2] Q
-        cdef np.ndarray[np.double_t] bias_u
-        cdef np.ndarray[np.double_t] bias_i
-        cdef double mu = self.trainset.global_mean
-
-        cdef double lr_pu = self.lr_pu
-        cdef double lr_qi = self.lr_qi
-        cdef double decay_pu = self.decay_pu
-        cdef double decay_qi = self.decay_qi
-        cdef double reg_pu = self.reg_pu
-        cdef double reg_qi = self.reg_qi
-        cdef double lambda_bu = self.lambda_bu
-        cdef double lambda_bi = self.lambda_bi
-
-        cdef double lr0_pu = lr_pu
-        cdef double lr0_qi = lr_qi
-
-        cdef int u, i, f
-        cdef double r, err, dot, puf, qif
-
-        # Set weights and frequencies
-        weights = self.weights
-
-        # Initialize P, Q (while keeping entries in range)
-        P = np.random.normal(self.init_mean, self.init_std, (self.trainset.n_users,self.n_factors))
-        Q = np.random.normal(self.init_mean, self.init_std, (self.trainset.n_items,self.n_factors))
-
-        # Initialize biases
-        bias_u = np.zeros(self.trainset.n_users)
-        bias_i = np.zeros(self.trainset.n_items)
-
-        for i in range(self.trainset.n_items):
-            neigh_i = self.trainset.ir[i]
-            for u, r in neigh_i:
-                bias_i[i] += r - mu
-            bias_i[i] /= (lambda_bi + len(neigh_i))
-        for u in range(self.trainset.n_users):
-            neigh_u = self.trainset.ur[u]
-            for i, r in neigh_u:
-                bias_u[u] += r - mu - bias_i[i]
-            bias_u[u] /= (lambda_bu + len(neigh_u))
-
-        # Optimize
-        for current_epoch in range(self.n_epochs):
-            if self.verbose:
-                print('Processing epoch {}'.format(current_epoch+1))
-            # Decay
-            lr_pu = lr0_pu/(1 + decay_pu*current_epoch)
-            lr_qi = lr0_qi/(1 + decay_qi*current_epoch)
-            for u, i, r in self.trainset.all_ratings():
-                # Compute estimated rating
-                dot = 0
-                for f in range(self.n_factors):
-                    dot += Q[i,f]*P[u,f]
-                err = r - (mu + bias_u[u] + bias_i[i] + dot)
-                for f in range(self.n_factors):
-                    puf, qif = P[u,f], Q[i,f]
-                    P[u,f] += lr_pu*(weights[u,i]*err*qif - reg_pu*puf)
-                    Q[i,f] += lr_qi*(weights[u,i]*err*puf - reg_qi*qif)
-
-        # Write parameters
-        self.P = P
-        self.Q = Q
-        self.bias_u = bias_u
-        self.bias_i = bias_i
-        self.mu = mu
-
-    def estimate(self, u, i):
-        '''
-        Returns the prediction for the given user and item
-
-        Parameters
-        u (int): the user index
-        i (int): the item index
-
-        Retuns:
-        rui (float): the prediction
-        '''
-
-        known_user = self.trainset.knows_user(u)
-        known_item = self.trainset.knows_item(i)
-
-        if known_user and known_item:
-            # Compute prediction
-            rui = np.dot(self.P[u,:], self.Q[i,:]) + self.bias_u[u] + self.bias_i[i] + self.mu
-            # Clip result
-            if rui < self.low:
-                rui = self.low
-            if rui > self.high:
-                rui = self.high
-            if self.conf is not None:
-                # Intify prediction
-                delta = 1-(rui%1)
-                if 0.5-delta >= self.conf:
-                    rui = math.ceil(rui)
-                elif delta-0.5 >= self.conf:
-                    rui = math.floor(rui)
-        else:
-            raise PredictionImpossible('User and item are unknown.')
-
-        return rui
 
 class SGDheu(AlgoBase):
     '''
@@ -270,6 +77,7 @@ class SGDheu(AlgoBase):
         self.bias_u = None
         self.bias_i = None
         self.mu = None
+        self.reps = None
 
     def fit(self, trainset):
         '''
@@ -308,6 +116,8 @@ class SGDheu(AlgoBase):
         cdef np.ndarray[np.double_t, ndim=2] delta_g_pu
         cdef np.ndarray[np.double_t, ndim=2] delta_g_qi
 
+        cdef np.ndarray[np.double_t] reps = self.reps
+
         cdef double lr_pu = self.lr_pu
         cdef double lr_qi = self.lr_qi
         cdef double alpha_pu = self.alpha_pu
@@ -322,7 +132,7 @@ class SGDheu(AlgoBase):
         cdef double lr0_pu = lr_pu
         cdef double lr0_qi = lr_qi
 
-        cdef int u, i, f
+        cdef int u, i, f, rp
         cdef double r, err, dot, puf, qif, gradient_pu, gradient_qi
 
         # Initialize P, Q
@@ -360,15 +170,15 @@ class SGDheu(AlgoBase):
                 dot = 0
                 for f in range(self.n_factors):
                     dot += Q[i,f]*P[u,f]
-                err = r - (mu + bias_u[u] + bias_i[i] + dot)
-                for f in range(self.n_factors):
-                    puf, qif = P[u,f], Q[i,f]
-                    # Update momentum
-                    delta_g_pu[u,f] = alpha_pu*delta_g_pu[u,f] + lr_pu*(err*qif - reg_pu*puf)
-                    delta_g_qi[i,f] = alpha_qi*delta_g_qi[i,f] + lr_qi*(err*puf - reg_qi*qif)
-                    # Update P, Q
-                    P[u,f] += delta_g_pu[u,f]
-                    Q[i,f] += delta_g_qi[i,f]
+                    err = r - (mu + bias_u[u] + bias_i[i] + dot)
+                    for f in range(self.n_factors):
+                        puf, qif = P[u,f], Q[i,f]
+                        # Update momentum
+                        delta_g_pu[u,f] = alpha_pu*delta_g_pu[u,f] + lr_pu*(err*qif - reg_pu*puf)
+                        delta_g_qi[i,f] = alpha_qi*delta_g_qi[i,f] + lr_qi*(err*puf - reg_qi*qif)
+                        # Update P, Q
+                        P[u,f] += delta_g_pu[u,f]
+                        Q[i,f] += delta_g_qi[i,f]
 
         # Write parameters
         self.P = P
@@ -400,175 +210,6 @@ class SGDheu(AlgoBase):
                 rui = self.low
             if rui > self.high:
                 rui = self.high
-            if self.conf is not None:
-                # Intify prediction
-                delta = 1-(rui%1)
-                if 0.5-delta >= self.conf:
-                    rui = math.ceil(rui)
-                elif delta-0.5 >= self.conf:
-                    rui = math.floor(rui)
-        else:
-            raise PredictionImpossible('User and item are unknown.')
-
-        return rui
-
-class SGDbound(AlgoBase):
-    '''
-    Implementation of the bounded SVD (with bias via heuristics) proposed by Le et al. (2016).
-    '''
-
-    def __init__(self, n_factors=100, n_epochs=20, lr_pu=0.01, lr_qi=0.01, reg_pu=1, reg_qi=1, lambda_bu=1, lambda_bi=1, r_min=1, r_max=5, max_init_p=1, max_init_q=1, conf=None, verbose=False):
-        '''
-        Initializes the class with the given parameters.
-
-        Parameters:
-        n_factors (int): the number of latent features. By default 100
-        n_epochs (int): the number of iterations. By default 20
-        lr_pu (float): the learning rate for P. By default 0.01
-        lr_qi (float): the learning rate for P. By default 0.01
-        reg_pu (float): the regularization strength for P. By default 1
-        reg_qi (float): the regularization strength for Q. By default 1
-        lambda_bu (float): the regularizer for the initialization of b[u]. By default 1
-        lambda_bi (float): the regularizer for the initialization of b[i]. By default 1
-        r_min (float): the minimum rating value. By default 1
-        r_max (float): the maximum rating value. By default 5
-        max_init_p (float): the maximum value for the initalization of P. By default 1
-        max_init_q (float): the maximum value for the initalization of Q. By default 1
-        conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
-        verbose (boolean): whether the algorithm should be verbose. By default False
-        '''
-
-        AlgoBase.__init__(self)
-
-        self.n_factors = n_factors
-        self.n_epochs = n_epochs
-        self.lr_pu = lr_pu
-        self.lr_qi = lr_qi
-        self.reg_pu = reg_pu
-        self.reg_qi = reg_qi
-        self.lambda_bu = lambda_bu
-        self.lambda_bi = lambda_bi
-        self.r_min = r_min
-        self.r_max = r_max
-        self.max_init_p = max_init_p
-        self.max_init_q = max_init_q
-        self.conf = conf
-        self.verbose = verbose
-
-        self.trainset = None
-        self.P = None
-        self.Q = None
-        self.bias_u = None
-        self.bias_i = None
-        self.mu = None
-
-    def fit(self, trainset):
-        '''
-        Fits the model to the provided dataset
-
-        Parameters:
-        trainset (surprise.Trainset): the training set to be fitted
-        '''
-
-        AlgoBase.fit(self, trainset)
-
-        # Read training set
-        self.trainset = trainset
-
-        # Call SGD
-        self.sgd()
-
-        return self
-
-    def sgd(self):
-        '''
-        Finds matrices P, Q by optimizing the following objective function:
-
-        H(P,Q)[u,i] = (r[u,i] - mu - b[u] - b[i] - p[u]*q[i])^2
-                    + (exp(mu + b[u] + b[i] + p[u]*q[i] - r_max) + exp(r_min - mu - b[u] - b[i] - p[u]*q[i]))
-        '''
-
-        # Cython initialization
-        cdef np.ndarray[np.double_t, ndim=2] P
-        cdef np.ndarray[np.double_t, ndim=2] Q
-        cdef np.ndarray[np.double_t] bias_u
-        cdef np.ndarray[np.double_t] bias_i
-        cdef double mu = self.trainset.global_mean
-
-        cdef double lr_pu = self.lr_pu
-        cdef double lr_qi = self.lr_qi
-        cdef double reg_pu = self.reg_pu
-        cdef double reg_qi = self.reg_qi
-        cdef double lambda_bu = self.lambda_bu
-        cdef double lambda_bi = self.lambda_bi
-        cdef double r_min = self.r_min
-        cdef double r_max = self.r_max
-
-        cdef int u, i, f
-        cdef double r, rui, h, err, dot, puf, qif
-
-        # Initalize P, Q
-        P = np.random.uniform(0, self.max_init_p, (self.trainset.n_users,self.n_factors))
-        Q = np.random.uniform(0, self.max_init_q, (self.trainset.n_items,self.n_factors))
-
-
-        # Initialize biases
-        bias_u = np.zeros(self.trainset.n_users)
-        bias_i = np.zeros(self.trainset.n_items)
-
-        for i in range(self.trainset.n_items):
-            neigh_i = self.trainset.ir[i]
-            for u, r in neigh_i:
-                bias_i[i] += r - mu
-            bias_i[i] /= (lambda_bi + len(neigh_i))
-        for u in range(self.trainset.n_users):
-            neigh_u = self.trainset.ur[u]
-            for i, r in neigh_u:
-                bias_u[u] += r - mu - bias_i[i]
-            bias_u[u] /= (lambda_bu + len(neigh_u))
-
-        # Optimize
-        for current_epoch in range(self.n_epochs):
-            if self.verbose:
-                print('Processing epoch {}'.format(current_epoch+1))
-            for u, i, r in self.trainset.all_ratings():
-                dot = 0
-                for f in range(self.n_factors):
-                    dot += Q[i,f]*P[u,f]
-                rui = mu + bias_u[u] + bias_i[i] + dot
-                err = r - rui
-                h = np.exp(rui - r_max) - np.exp(r_min - rui)
-                # Update step
-                for f in range(self.n_factors):
-                    puf, qif = P[u,f], Q[i,f]
-                    P[u,f] += lr_pu*qif*(err - reg_pu*h)
-                    Q[i,f] += lr_qi*puf*(err - reg_qi*h)
-
-        # Write parameters
-        self.P = P
-        self.Q = Q
-        self.bias_u = bias_u
-        self.bias_i = bias_i
-        self.mu = mu
-
-    def estimate(self, u, i):
-        '''
-        Returns the prediction for the given user and item
-
-        Parameters
-        u (int): the user index
-        i (int): the item index
-
-        Retuns:
-        rui (float): the prediction
-        '''
-
-        known_user = self.trainset.knows_user(u)
-        known_item = self.trainset.knows_item(i)
-
-        if known_user and known_item:
-            # Compute prediction
-            rui = np.dot(self.P[u,:], self.Q[i,:]) + self.bias_u[u] + self.bias_i[i] + self.mu
             if self.conf is not None:
                 # Intify prediction
                 delta = 1-(rui%1)
