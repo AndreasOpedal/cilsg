@@ -16,7 +16,7 @@ def targeting_rmse(model, testset):
 
     # Compute errors
     for u, i, r in testset:
-        rui = model.predict(u, i).est # prediction
+        rui = model.predict(u, i).est
         rmses[int(r)-1] += (r - rui)**2
         errors[int(r)-1] += 1
 

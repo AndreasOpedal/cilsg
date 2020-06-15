@@ -80,7 +80,7 @@ class SVD(AlgoBase):
 
         Parameters:
         n_factors (int): the number of latent features. By default 100
-        impute_strategy (string): the strategy to use to impute the non-rated items. The options are None (0), 'mean', and
+        impute_strategy (string): the strategy to use to impute the non-rated items. The options are None (0), 'ones', 'mean', and
                                   'median'. By default None
         '''
 
@@ -88,8 +88,8 @@ class SVD(AlgoBase):
         self.impute_strategy = impute_strategy
 
         self.trainset = None
-        self.U_k = None
-        self.V_k = None
+        self.U = None
+        self.V = None
 
     def fit(self, trainset):
         '''
@@ -122,7 +122,9 @@ class SVD(AlgoBase):
             X[u,i] = r
 
         # Impute empty ratings (if instructed)
-        if self.impute_strategy == 'mean':
+        if self.impute_strategy == 'ones':
+            X[X==0] = 1
+        elif self.impute_strategy == 'mean':
             X[X==0] = self.trainset.global_mean
         elif self.impute_strategy == 'median':
             median = np.median(X)
@@ -139,13 +141,12 @@ class SVD(AlgoBase):
         # Pad D
         D_p = np.append(D, np.zeros((U.shape[0]-D.shape[0],D.shape[0])), axis=0)
 
-        # Scale P, Qt
         U = U.dot(D_p)
         V = D.dot(Vt.T)
 
         # Select vectors from U, V
-        self.U_k = U[:,:self.n_factors]
-        self.V_k = V[:,:self.n_factors]
+        self.U = U[:,:self.n_factors]
+        self.V = V[:,:self.n_factors]
 
     def estimate(self, u, i):
         '''
@@ -164,7 +165,7 @@ class SVD(AlgoBase):
 
         if known_user and known_item:
             # Compute prediction
-            rui = np.dot(self.U_k[u,:], self.V_k[i,:])
+            rui = np.dot(self.U[u,:], self.V[i,:])
             # Clip result
             if rui < self.low:
                 rui = self.low

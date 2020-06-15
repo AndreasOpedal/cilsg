@@ -4,7 +4,6 @@ import pandas as pd
 import utils
 import source
 from model_selection import targeting_rmse
-from preprocess import synthetic_ratings
 from surprise import Reader, Dataset, accuracy
 from surprise.model_selection import train_test_split, cross_validate
 from surprise.model_selection.search import RandomizedSearchCV, GridSearchCV
@@ -52,6 +51,7 @@ def kfold(model, data, k=10):
     model (surprise.AlgoBase): the model to test
     data (surprise.Dataset): the data to use
     k (int): the number of folds. By default 10
+    load (boolean): whether the weights of the model should be loaded
     '''
     # Set up kfold
     dict = cross_validate(model, data, measures=['rmse'], cv=k, n_jobs=-1, verbose=True)
@@ -91,7 +91,7 @@ def random_search(algo_class, data, k=10, n_iters=100):
     results = pd.DataFrame.from_dict(rs.cv_results)
     print(results)
 
-def dump(model, data, indexes, file_name):
+def dump(model, data, indexes, file_name, load_dir):
     '''
     Dumps the predictions of the selected model on a csv file.
     The model is trained on the whole training set.
@@ -101,9 +101,14 @@ def dump(model, data, indexes, file_name):
     data (surprise.Dataset): the training data
     indexes (list): a list of tuples, where each tuple contains the indexes (u,i) which need to be predicted
     file_name (str): the name of the csv file
+    load_dir (str): the directory from which to load the weights
     '''
-    # Fit model
-    model.fit(data)
+    # Fit model (if weights not loaded)
+    if load_dir != '':
+        model.load_weights(weights_file_path)
+        model.trainset = data
+    else:
+        model.fit(data)
     # Predictions
     predictions = []
     for index in indexes:
@@ -113,16 +118,29 @@ def dump(model, data, indexes, file_name):
     # Dump predictions
     utils.write_predictions_to_csv(predictions, file_name)
 
+def save(model, data):
+    '''
+    Save the weights of the model.
+    The model is trained on the whole training set.
+
+    Parameters:
+    model (surprise.AlgoBase): the model whose predictions need to be computed
+    data (surprise.Dataset): the training data
+    '''
+    # Fit model
+    model.fit(data)
+    model.save_weights(weights_file_path)
+
 if __name__ == '__main__':
     # Argparser parameters
     parser = argparse.ArgumentParser(description='Collaborative Filtering')
-    parser.add_argument('computation', type=str, metavar='computation', help='the computation to perform (options: cv, target_cv, kfold, grid, random_search, dump, dump_fold)')
+    parser.add_argument('computation', type=str, metavar='computation', help='the computation to perform (options: cv, target_cv, kfold, grid, random_search, dump, save)')
     parser.add_argument('algo_name', type=str, metavar='algo_name', help='the name of the algorithm to use (see names of classes in factorization.pyx and baseline.py)')
-    parser.add_argument('--model_num', type=int, default=-1, help='the number of the model (instance of an algo_class) to use (default: -1)')
-    parser.add_argument('--n_synth', type=int, default=-1, help='the number of synthetic ratings (default: -1, i.e. none)')
+    parser.add_argument('--model_num', type=int, default=-1, help='the number of the model (instance of an algo_class) to use (default: -1, i.e. none)')
     parser.add_argument('--k', type=int, default=10, help='the k for kfold cross-validation (default: 10)')
     parser.add_argument('--n_iters', type=int, default=100, help='the number of iterations to perform in random search (default: 100)')
-    parser.add_argument('--verbose', type=bool, default=False, help='whether the algorithm should be verbose (default: false)')
+    parser.add_argument('--load', type=bool, default=False, help='whether the weights of the model should be loaded (default: False)')
+    parser.add_argument('--verbose', type=bool, default=False, help='whether the algorithm should be verbose (default: False)')
 
     # Parse arguments
     args = parser.parse_args()
@@ -134,10 +152,6 @@ if __name__ == '__main__':
     df = utils.read_data_as_data_frame(source.TRAIN_DATA_PATH)
     # Read list of indexes (to predict)
     indexes = utils.read_submission_indexes(source.PREDICTION_INDEXES_PATH)
-
-    # Add synthetic ratings (if selected)
-    if args.n_synth > 0:
-        df = synthetic_ratings(df, indexes, to_add=args.n_synth)
 
     # Set up training set
     reader = Reader()
@@ -156,6 +170,16 @@ if __name__ == '__main__':
     if model is not None:
         model.verbose = args.verbose
 
+    # Weights path
+    weights_file_path = ''
+
+    # Check for weights saving/loading
+    if args.computation == 'save' or args.load:
+        # Sets the file path
+        weights_file_path = source.WEIGHTS_DIR + args.algo_name.lower() + '-' + str(args.model_num) + '/'
+        # Create directory
+        utils.create_dir(weights_file_path)
+
     # Perform requested computation
     if args.computation == 'cv':
         cv(model, training_set)
@@ -170,6 +194,9 @@ if __name__ == '__main__':
     elif args.computation == 'dump':
         file_name = source.NEW_PREDICTIONS_DIR + args.algo_name.lower() + '-' + str(args.model_num) + '.csv'
         training_set = training_set.build_full_trainset()
-        dump(model, training_set, indexes, file_name)
+        dump(model, training_set, indexes, file_name, weights_file_path)
+    elif args.computation == 'save':
+        training_set = training_set.build_full_trainset()
+        save(model, training_set)
     else:
         print('Invalid computation selected.')

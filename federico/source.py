@@ -1,5 +1,5 @@
 '''
-A file which contains constants, algorithm classes, model instances, and parameter grids.
+This file which contains constants, algorithm classes, model instances, and parameter grids.
 '''
 
 from scipy import stats
@@ -13,6 +13,7 @@ SEED = 666
 TRAIN_DATA_PATH = '../data/data_train.csv'
 PREDICTION_INDEXES_PATH = '../data/sampleSubmission.csv'
 NEW_PREDICTIONS_DIR = 'predictions/'
+WEIGHTS_DIR = 'weights/'
 
 ###############################################################################################
 
@@ -62,7 +63,11 @@ instances['SGDPP2'][11] = SGDPP2(n_factors=164, n_epochs=40, init_mean=0, init_s
 instances['SGDPP2'][12] = SGDPP2(n_factors=192, n_epochs=95, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=80, impute_strategy='median', conf=None)
 instances['SGDPP2'][13] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=80, conf=None)
 instances['SGDPP2'][14] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, conf=None)
-instances['SGDPP2'][15] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=20, conf=None)
+instances['SGDPP2'][15] = SGDPP2(n_factors=192, n_epochs=25, init_mean=0.2, init_std=0.005, lr_pu=0.015, lr_qi=0.015, alpha_pu=0.28, alpha_qi=0.28, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, conf=None)
+instances['SGDPP2'][16] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=55, conf=None)
+instances['SGDPP2'][17] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=55, conf=0.49)
+instances['SGDPP2'][18] = SGDPP2(n_factors=160, n_epochs=25, init_mean=0.2, init_std=0.005, lr_pu=0.001, lr_qi=0.005, alpha_pu=0.25, alpha_qi=0.35, decay_pu=0.005, decay_qi=0.001, reg_pu=0.08, reg_qi=0.01, lambda_bu=10, lambda_bi=10, lambda_yj=10, conf=None)
+instances['SGDPP2'][19] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.05, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, impute_strategy=None, conf=None)
 instances['ALS'][1] = ALS()
 
 ###############################################################################################
@@ -90,17 +95,19 @@ param_grid = {
 
 # Grid for Random Search
 dist_grid = {
-    'n_factors': stats.randint(160, 165),
-    'n_epochs': stats.randint(65, 90),
-    'init_mean': stats.uniform(0.2, 0.05),
-    'init_std': stats.uniform(0.005, 0.01),
-    'lr_pu': stats.uniform(0.012, 0.02),
-    'lr_qi': stats.uniform(0.012, 0.02),
-    'decay_pu': stats.uniform(0.04, 0.05),
-    'decay_qi': stats.uniform(0.04, 0.05),
-    'reg_pu': stats.uniform(0.055, 0.03),
-    'reg_qi': stats.uniform(0.055, 0.03),
-    'lambda_bu': stats.randint(12, 25),
-    'lambda_bi': stats.uniform(0.1, 6),
-    'conf': stats.uniform(0.47, 0.02)
+    'n_factors': stats.randint(190, 194),
+    'n_epochs': stats.randint(80, 95),
+    'init_mean': stats.uniform(0.175, 0.05),
+    'init_std': stats.uniform(0.004, 0.002),
+    'lr_pu': stats.uniform(0.0012, 0.0007),
+    'lr_qi': stats.uniform(0.0012, 0.0007),
+    'alpha_pu': stats.uniform(0.2, 0.25),
+    'alpha_qi': stats.uniform(0.2, 0.25),
+    'decay_pu': stats.uniform(0.01, 0.02),
+    'decay_qi': stats.uniform(0.04, 0.03),
+    'reg_pu': stats.uniform(0.05, 0.02),
+    'reg_qi': stats.uniform(0.055, 0.02),
+    'lambda_bu': stats.randint(20, 25),
+    'lambda_bi': stats.uniform(0.4, 0.2),
+    'lambda_yj': stats.randint(50, 55)
 }
