@@ -134,31 +134,6 @@ def write_predictions_to_csv(predictions, file_path):
             # Write file row
             writer.writerow(file_row)
 
-def write_matrix(X, file_name):
-    '''
-    Writes the given matrix into .npy format
-
-    Parameters:
-    X (numpy.ndarray): the matrix to write
-    file_name (str): the file name
-    '''
-
-    np.save(file_name, X)
-
-def read_matrix(file_name):
-    '''
-    Reads the matrix at the given file
-
-    Parameters:
-    file_name (str): the name of the file to read
-
-    Returns:
-    X (numpy.ndarray): the matrix to write
-    '''
-
-    X = np.load(file_name)
-    return X
-
 def create_dir(dir_path):
     '''
     Creates the given directory if it does not exist

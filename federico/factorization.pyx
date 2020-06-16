@@ -228,13 +228,13 @@ class SGDheu(AlgoBase):
         '''
 
         # Save mean
-        utils.write_matrix(self.mu, dir+'mu')
+        np.save(self.mu, dir+'mu')
         # Save biases
-        utils.write_matrix(self.bias_u, dir+'bias_u')
-        utils.write_matrix(self.bias_i, dir+'bias_i')
+        np.save(self.bias_u, dir+'bias_u')
+        np.save(self.bias_i, dir+'bias_i')
         # Save P, Q
-        utils.write_matrix(self.P, dir+'P')
-        utils.write_matrix(self.Q, dir+'Q')
+        np.save(self.P, dir+'P')
+        np.save(self.Q, dir+'Q')
 
     def load_weights(self, dir):
         '''
@@ -488,15 +488,15 @@ class SGDPP2(AlgoBase):
         '''
 
         # Save mean
-        utils.write_matrix(self.mu, dir+'mu')
+        np.save(self.mu, dir+'mu')
         # Save biases
-        utils.write_matrix(self.bias_u, dir+'bias_u')
-        utils.write_matrix(self.bias_i, dir+'bias_i')
+        np.save(self.bias_u, dir+'bias_u')
+        np.save(self.bias_i, dir+'bias_i')
         # Save item factors
-        utils.write_matrix(self.u_impl_fdb, dir+'u_impl_fdb')
+        np.save(self.u_impl_fdb, dir+'u_impl_fdb')
         # Save P, Q
-        utils.write_matrix(self.P, dir+'P')
-        utils.write_matrix(self.Q, dir+'Q')
+        np.save(self.P, dir+'P')
+        np.save(self.Q, dir+'Q')
 
     def load_weights(self, dir):
         '''
