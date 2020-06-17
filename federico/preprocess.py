@@ -1,45 +1,69 @@
 import numpy as np
-from sklearn.impute import SimpleImputer
-from sklearn.impute import KNNImputer
+import pandas as pd
+import random
 
-def impute(X, missing_values=0, strategy='mean'):
+def build_weights(trainset):
     '''
-    Imputes the missing values of the given matrix, according to the given strategy.
+    Given training data, build a matrix which associates a weight to each entry. Specifically, a weight will be associated to each
+    rating {1,2,3,4,5}.
 
     Parameters:
-    X (scipy.sparse.dok_matrix): the matrix to be imputed
-    missing_values (number, string, np.nan or None): the values to be replaced. By default 0
-    strategy (string): which strategy to apply for imputing. By default 'mean'
+    trainset (surprise.Trainset): the training data
 
     Returns:
-    X (numpy.ndarray): the imputed matrix
+    weights (numpy.ndarray): the matrix of weights with size (trainset.n_users, trainset.n_items)
     '''
 
-    X = X.todense()
+    # Define weights matrix
+    weights = np.zeros((trainset.n_users, trainset.n_items))
 
-    imputer = SimpleImputer(missing_values=missing_values, strategy=strategy)
-    imputer.fit(X)
-    X = imputer.transform(X)
+    # Define array holding the ratings
+    freqs = np.zeros(5)
 
-    return X
+    # Compute frequencies
+    for _, _, r in trainset.all_ratings():
+        freqs[int(r)-1] += 1
 
-def knn_impute(X, missing_values=0, n_neighbors=5):
+    # Rescale frequencies
+    freqs /= np.sum(freqs)
+
+    # Flip array
+    freqs = np.flip(freqs)
+
+    # Associate frequencies to weights
+    for u, i, r in trainset.all_ratings():
+        weights[u,i] = freqs[int(r)-1]
+
+    # Return weights
+    return weights
+
+def over_sample(trainset):
     '''
-    Imputes the missing values of the given matrix, using kNN.
+    Computes for each rating belonging to {1,2,3,4,5} the number of times a tuple (u,i,r) should be iterated over in the
+    optimization procedure. The number of repetitions is proportional to the maximum number of times a rating appears.
+    For example, if the rating 1 appears 10 times, and the rating 5 has the maximum number of appearances with 100, then
+    each rating 1 will be iterated over 100/10=10 times in the optimization procedure.
 
     Parameters:
-    X (scipy.sparse.dok_matrix): the matrix to be imputed
-    missing_values (number, string, np.nan or None): the values to be replaced. By default 0
-    n_neighbors (int): the number or neirest neighbors
+    trainset (surprise.Trainset): the training data
 
     Returns:
-    X (numpy.ndarray): the imputed matrix
+    reps (numpy.ndarray): the array where each entry holds the number of repetitions for a given rating
     '''
 
-    X = X.todense()
+    # Repetitions array
+    reps = np.zeros(5)
 
-    imputer = KNNImputer(missing_values=missing_values, n_neighbors=n_neighbors)
-    imputer.fit(X)
-    X = imputer.transform(X)
+    # Fill reps
+    for _, _, r in trainset.all_ratings():
+        reps[int(r)-1] += 1
 
-    return X
+    # Compute maximum number rating
+    max_num = np.max(reps)
+
+    # Compute final number of repetitions
+    for r in range(5):
+        reps[r] = int(max_num/reps[r])
+
+    # Return repetitions array
+    return reps
