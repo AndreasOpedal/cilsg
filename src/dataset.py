@@ -18,8 +18,9 @@ def load_from_csv(filename):
     assert len(preds) == len(rows) == len(cols)
     rows = np.subtract(rows, 1)
     cols = np.subtract(cols, 1)
-    assert np.min(rows) == 0
-    assert np.min(cols) == 0
+#     if not is_split:
+#         assert np.min(rows) == 0
+#         assert np.min(cols) == 0
     return csr_matrix((preds, (rows, cols)))
 
 def _load_cached(filename):
@@ -27,7 +28,7 @@ def _load_cached(filename):
         print("Caching dataset %s ..." % filename)
         dataset = load_from_csv(filename)
         np.save(filename + ".npy", dataset)
-    return np.load(filename + ".npy")
+    return np.load(filename + ".npy", allow_pickle=True).tolist() # will give csr_matrix
 
 
 def create_n_splits(filename, n=5, random_state=42):
@@ -56,8 +57,8 @@ def create_n_splits(filename, n=5, random_state=42):
         for i, item in enumerate(items):
             #item2fold[item] = i // items_per_fold 
             if items_per_fold <= 0:
-                # not enough items, we'll just put it in fold zero
-                fold2items[0].append(item)
+                # not enough items, we'll just put it in random fold
+                fold2items[i % n].append(item)
             else:
                 # put each item in the correct fold
                 fold2items[min(i // items_per_fold, n-1)].append(item)
@@ -69,8 +70,8 @@ def create_n_splits(filename, n=5, random_state=42):
 
 
 def load_datasets():
-    X_train = _load_cached("../data/data_train.csv")
+    X_train = np.sum([_load_cached("../data/data_train.csv.%d" % i) for i in [0,1,2,3]])
     X_test = _load_cached("../data/sampleSubmission.csv")
-    X_valid = None
+    X_valid = _load_cached("../data/data_train.csv.4")
     # TODO: train-dev split
     return X_train, X_valid, X_test
