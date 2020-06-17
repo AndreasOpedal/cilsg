@@ -3,6 +3,7 @@ import numpy as np
 from scipy.sparse import dok_matrix
 import csv
 import math
+import os
 from random import shuffle
 
 def read_data_as_matrix(file_path):
@@ -110,7 +111,7 @@ def write_predictions_to_csv(predictions, file_path):
     r1_c1, 1
 
     Parameters:
-    predictions (??): the predictions
+    predictions (surprise.prediction_algorithms.predictions.Prediction): the object holding the predictions
     file_path (string): the path to the prediction file
     '''
 
@@ -132,3 +133,16 @@ def write_predictions_to_csv(predictions, file_path):
             file_row['Prediction'] = pred
             # Write file row
             writer.writerow(file_row)
+
+def create_dir(dir_path):
+    '''
+    Creates the given directory if it does not exist
+
+    Parameters:
+    dir_path (str): the directory to create
+    '''
+
+    # Check if directory already exists
+    if not os.path.isdir(dir_path):
+        # Create directory
+        os.mkdir(dir_path)

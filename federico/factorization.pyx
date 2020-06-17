@@ -15,9 +15,9 @@ All algorithms follow the same structure as Simon Funk's SVD. The implemented al
 cimport numpy as np
 import numpy as np
 import math
-from preprocess import over_sample
-from surprise import AlgoBase, Dataset, PredictionImpossible
+from surprise import AlgoBase, PredictionImpossible
 from baseline import SVD
+import utils
 
 class SGDheu(AlgoBase):
     '''
@@ -116,8 +116,6 @@ class SGDheu(AlgoBase):
         cdef np.ndarray[np.double_t, ndim=2] delta_g_pu
         cdef np.ndarray[np.double_t, ndim=2] delta_g_qi
 
-        cdef np.ndarray[np.double_t] reps = self.reps
-
         cdef double lr_pu = self.lr_pu
         cdef double lr_qi = self.lr_qi
         cdef double alpha_pu = self.alpha_pu
@@ -132,8 +130,8 @@ class SGDheu(AlgoBase):
         cdef double lr0_pu = lr_pu
         cdef double lr0_qi = lr_qi
 
-        cdef int u, i, f, rp
-        cdef double r, err, dot, puf, qif, gradient_pu, gradient_qi
+        cdef int u, i, f
+        cdef double r, err, dot, puf, qif
 
         # Initialize P, Q
         P = np.random.normal(self.init_mean, self.init_std, (self.trainset.n_users,self.n_factors))
@@ -170,15 +168,15 @@ class SGDheu(AlgoBase):
                 dot = 0
                 for f in range(self.n_factors):
                     dot += Q[i,f]*P[u,f]
-                    err = r - (mu + bias_u[u] + bias_i[i] + dot)
-                    for f in range(self.n_factors):
-                        puf, qif = P[u,f], Q[i,f]
-                        # Update momentum
-                        delta_g_pu[u,f] = alpha_pu*delta_g_pu[u,f] + lr_pu*(err*qif - reg_pu*puf)
-                        delta_g_qi[i,f] = alpha_qi*delta_g_qi[i,f] + lr_qi*(err*puf - reg_qi*qif)
-                        # Update P, Q
-                        P[u,f] += delta_g_pu[u,f]
-                        Q[i,f] += delta_g_qi[i,f]
+                err = r - (mu + bias_u[u] + bias_i[i] + dot)
+                for f in range(self.n_factors):
+                    puf, qif = P[u,f], Q[i,f]
+                    # Update momentum
+                    delta_g_pu[u,f] = alpha_pu*delta_g_pu[u,f] + lr_pu*(err*qif - reg_pu*puf)
+                    delta_g_qi[i,f] = alpha_qi*delta_g_qi[i,f] + lr_qi*(err*puf - reg_qi*qif)
+                    # Update P, Q
+                    P[u,f] += delta_g_pu[u,f]
+                    Q[i,f] += delta_g_qi[i,f]
 
         # Write parameters
         self.P = P
@@ -221,6 +219,38 @@ class SGDheu(AlgoBase):
             raise PredictionImpossible('User and item are unknown.')
 
         return rui
+
+    def save_weights(self, dir):
+        '''
+        Save the weights of the model in the given directory
+
+        dir (str): the directory to write the files into
+        '''
+
+        # Save mean
+        np.save(self.mu, dir+'mu')
+        # Save biases
+        np.save(self.bias_u, dir+'bias_u')
+        np.save(self.bias_i, dir+'bias_i')
+        # Save P, Q
+        np.save(self.P, dir+'P')
+        np.save(self.Q, dir+'Q')
+
+    def load_weights(self, dir):
+        '''
+        Loads the weights of the model from the given directory
+
+        dir (str): the directory to write the files into
+        '''
+
+        # Load mean
+        self.mu = np.load(dir+'mu.npy')
+        # Load biases
+        self.bias_u = np.load(dir+'bias_u.npy')
+        self.bias_i = np.load(dir+'bias_i.npy')
+        # Load P, Q
+        self.P = np.load(dir+'P.npy')
+        self.Q = np.load(dir+'Q.npy')
 
 class SGDPP2(AlgoBase):
     '''
@@ -322,7 +352,7 @@ class SGDPP2(AlgoBase):
         cdef np.ndarray[np.double_t] bias_i
         cdef double mu = self.trainset.global_mean
 
-        cdef np.ndarray[np.double_t, ndim=2] V_k
+        cdef np.ndarray[np.double_t, ndim=2] V
 
         cdef np.ndarray[np.double_t, ndim=2] delta_g_pu
         cdef np.ndarray[np.double_t, ndim=2] delta_g_qi
@@ -368,16 +398,16 @@ class SGDPP2(AlgoBase):
         u_impl_fdb = np.zeros((self.trainset.n_users,self.n_factors))
 
         # Use SVD to get item factors
-        svd = SVD(self.n_factors, self.impute_strategy)
+        svd = SVD(n_factors=self.n_factors, impute_strategy=self.impute_strategy)
         svd.fit(self.trainset)
-        V_k = svd.V_k
+        V = svd.V
 
         for u in range(self.trainset.n_users):
             u_rated = 0
             for i, _ in self.trainset.ur[u]:
                 u_rated += 1
                 for f in range(self.n_factors):
-                    u_impl_fdb[u,f] += V_k[i,f]
+                    u_impl_fdb[u,f] += V[i,f]
             for f in range(self.n_factors):
                 u_impl_fdb[u,f] /= ((lambda_yj + u_rated)*np.sqrt(u_rated))
 
@@ -449,3 +479,39 @@ class SGDPP2(AlgoBase):
             raise PredictionImpossible('User and item are unknown.')
 
         return rui
+
+    def save_weights(self, dir):
+        '''
+        Save the weights of the model in the given directory
+
+        dir (str): the directory to write the files into
+        '''
+
+        # Save mean
+        np.save(self.mu, dir+'mu')
+        # Save biases
+        np.save(self.bias_u, dir+'bias_u')
+        np.save(self.bias_i, dir+'bias_i')
+        # Save item factors
+        np.save(self.u_impl_fdb, dir+'u_impl_fdb')
+        # Save P, Q
+        np.save(self.P, dir+'P')
+        np.save(self.Q, dir+'Q')
+
+    def load_weights(self, dir):
+        '''
+        Loads the weights of the model from the given directory
+
+        dir (str): the directory to write the files into
+        '''
+
+        # Load mean
+        self.mu = np.load(dir+'mu.npy')
+        # Load biases
+        self.bias_u = np.load(dir+'bias_u.npy')
+        self.bias_i = np.load(dir+'bias_i.npy')
+        # Load item factors
+        self.u_impl_fdb = np.load(dir+'u_impl_fdb.npy')
+        # Load P, Q
+        self.P = np.load(dir+'P.npy')
+        self.Q = np.load(dir+'Q.npy')
