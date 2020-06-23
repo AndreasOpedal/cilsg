@@ -106,7 +106,7 @@ def predict(p_z, mu_iz, usermu=None, uservar=None):
 def SVD_impute(ratings, prediction, num_keep=10):
     nr, nc = prediction.shape
     train_matrix = df_to_mat(ratings, nr, nc)
-    train_r, train_c = ratings.loc[:, 'row'], ratings.loc[:, 4'col']
+    train_r, train_c = ratings.loc[:, 'row'], ratings.loc[:, 'col']
     prediction[train_r, train_c] = train_matrix[train_r, train_c]
     u, s, vh = np.linalg.svd(prediction)
     s = s[:num_keep]
@@ -122,10 +122,11 @@ if __name__ == "__main__":
     fold_5 = pd.read_csv('../andreas/fold_5.csv', index_col = 0)
     folds = [fold_1, fold_2, fold_3, fold_4, fold_5]
 
-    param_hidden = [10, 15, 20]#[5, 10, 20, 30, 40, 50, 100]
+    param_hidden = [20]#[10, 15, 20, 30, 50, 100]
     rmse = []
     max_iter = 5
     is_normalize = True
+    num_keep = 10 #[10, 15, 20]
     log = open("./log.txt", "a")
     ts = datetime.datetime.now().strftime('%Y%m%d_%H%M')
 
@@ -139,13 +140,15 @@ if __name__ == "__main__":
             train = pd.concat(train)
             if is_normalize:
                 pz, mu, usermu, uservar = gaussian_pLSA(train, 10000, 1000, z, max_iter, is_normalize)
-                #np.savez("./saved_models/plsa{}_iter{}_testfold{}_{}".format(z, max_iter,i, ts), pz, mu, usermu, uservar)
+                np.savez("./saved_models/plsa{}_iter{}_testfold{}_{}".format(z, max_iter,i, ts), pz, mu, usermu, uservar)
                 plsa_prediction = predict(pz, mu, usermu, uservar)
+                #plsa_prediction = predict(pz, mu)
             else:
                 pz, mu = gaussian_pLSA(pd.concat(train), 10000, 1000, z, max_iter, is_normalize)
-                #np.savez("./saved_models/plsa{}_iter{}_testfold{}_{}".format(z, max_iter, i, ts), pz, mu)
+                np.savez("./saved_models/plsa{}_iter{}_testfold{}_{}".format(z, max_iter, i, ts), pz, mu)
                 plsa_prediction = predict(pz, mu)
-            svd_prediction = SVD_impute(train, plsa_prediction)
+            svd_prediction = SVD_impute(train, plsa_prediction, num_keep)
+            #svd_prediction = np.add(np.multiply(svd_prediction, uservar[:,np.newaxis]), usermu[:, np.newaxis])
             svd_prediction = np.clip(svd_prediction, 1, 5)
             # Eval on Validation
             ridx = test.loc[:,'row']
