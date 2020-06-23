@@ -74,18 +74,20 @@ class SVD(AlgoBase):
     Implementation of SVD.
     '''
 
-    def __init__(self, n_factors=160, impute_strategy=None):
+    def __init__(self, n_factors=160, impute_strategy=None, eps=1e-3):
         '''
         Initializes the class with the given parameters.
 
         Parameters:
-        n_factors (int): the number of latent features. By default 100
-        impute_strategy (string): the strategy to use to impute the non-rated items. The options are None (0), 'ones', 'mean', and
-                                  'median'. By default None
+        n_factors (int): the number of latent features. By default 160
+        impute_strategy (object): the strategy to use to impute the non-rated items. The options are None (0), 'ones', 'mean', 'median',
+                                  'neg_eps' a small negative value, and 'pos_eps' a small positive value. By default None
+        eps (float): the epsilon used for imputing (if selected). By default 1e-3
         '''
 
         self.n_factors = n_factors
         self.impute_strategy = impute_strategy
+        self.eps = eps
 
         self.trainset = None
         self.U = None
@@ -123,12 +125,16 @@ class SVD(AlgoBase):
 
         # Impute empty ratings (if instructed)
         if self.impute_strategy == 'ones':
-            X[X==0] = 1
+            X[X<1] = 1
         elif self.impute_strategy == 'mean':
-            X[X==0] = self.trainset.global_mean
+            X[X<1] = self.trainset.global_mean
         elif self.impute_strategy == 'median':
             median = np.median(X)
-            X[X==0] = median
+            X[X<1] = median
+        elif self.impute_strategy == 'neg_eps':
+            X[X<1] = -self.eps
+        elif self.impute_strategy == 'pos_eps':
+            X[X<1] = self.eps
 
         # Compute the SVD of X
         U, S, Vt = np.linalg.svd(X)
@@ -254,13 +260,13 @@ class ALS(AlgoBase):
         for current_epoch in range(self.n_epochs):
             if self.verbose:
                 print('Processing epoch {}'.format(current_epoch+1))
+            P_old = self.P.copy()
             for u in range(self.trainset.n_users):
                 temp_pq = np.zeros((self.n_factors,self.n_factors))
                 temp_r = np.zeros(self.n_factors)
                 for i, r in self.trainset.ur[u]:
-                    temp_pq += np.dot(self.Q[i,:], self.Q[i,:].T)
+                    temp_pq += np.dot(self.Q[i,:], self.Q[i,:].T) + self.reg*identity
                     temp_r += r*self.Q[i,:]
-                temp_pq += self.reg*identity
                 try:
                     self.P[u,:] = np.dot(np.linalg.inv(temp_pq), temp_r)
                 except np.linalg.LinAlgError as err:
@@ -271,9 +277,8 @@ class ALS(AlgoBase):
                 temp_pq = np.zeros((self.n_factors,self.n_factors))
                 temp_r = np.zeros(self.n_factors)
                 for u, r in self.trainset.ir[i]:
-                    temp_pq += np.dot(self.P[u,:], self.P[u,:].T)
-                    temp_r += r*self.P[u,:]
-                temp_pq += self.reg*identity
+                    temp_pq += np.dot(P_old[u,:], P_old[u,:].T) + self.reg*identity
+                    temp_r += r*P_old[u,:]
                 try:
                     self.Q[i,:] = np.dot(np.linalg.inv(temp_pq), temp_r)
                 except np.linalg.LinAlgError as err:

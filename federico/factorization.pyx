@@ -17,7 +17,6 @@ import numpy as np
 import math
 from surprise import AlgoBase, PredictionImpossible
 from baseline import SVD
-import utils
 
 class SGDheu(AlgoBase):
     '''
@@ -77,7 +76,6 @@ class SGDheu(AlgoBase):
         self.bias_u = None
         self.bias_i = None
         self.mu = None
-        self.reps = None
 
     def fit(self, trainset):
         '''
@@ -193,7 +191,7 @@ class SGDheu(AlgoBase):
         u (int): the user index
         i (int): the item index
 
-        Retuns:
+        Returns:
         rui (float): the prediction
         '''
 
@@ -251,6 +249,31 @@ class SGDheu(AlgoBase):
         # Load P, Q
         self.P = np.load(dir+'P.npy')
         self.Q = np.load(dir+'Q.npy')
+
+    def get_features(self, u, i):
+        '''
+        Returns the features for the given (user, index).
+        The features have the form [mu, bias_u[u], bias_i[i], dot(P[u,:],Q[i,:])]
+
+        Parameters:
+        u (int): the user index
+        i (int): the item index
+
+        Returns:
+        fv (numpy.ndarray): the feature vector
+        '''
+
+        # Initialize feature vector
+        fv = np.zeros(4)
+
+        # Fill feature vector
+        fv[0] = self.mu
+        fv[1] = self.bias_u[u]
+        fv[2] = self.bias_i[i]
+        fv[3] = np.dot(self.P[u,:], self.Q[i,:])
+
+        # Return feature vector
+        return fv
 
 class SGDPP2(AlgoBase):
     '''
@@ -310,6 +333,7 @@ class SGDPP2(AlgoBase):
         self.verbose = verbose
 
         self.trainset = None
+
         self.P = None
         self.Q = None
         self.u_impl_fdb = None
@@ -373,7 +397,7 @@ class SGDPP2(AlgoBase):
         cdef double lr0_qi = lr_qi
 
         cdef int u, i, f
-        cdef double r, err, dot, puf, qif, gradient_pu, gradient_qi
+        cdef double r, err, dot, puf, qif
 
         # Initialize P, Q
         P = np.random.normal(self.init_mean, self.init_std, (self.trainset.n_users,self.n_factors))
@@ -453,7 +477,7 @@ class SGDPP2(AlgoBase):
         u (int): the user index
         i (int): the item index
 
-        Retuns:
+        Returns:
         rui (float): the prediction
         '''
 
@@ -515,3 +539,28 @@ class SGDPP2(AlgoBase):
         # Load P, Q
         self.P = np.load(dir+'P.npy')
         self.Q = np.load(dir+'Q.npy')
+
+    def get_features(self, u, i):
+        '''
+        Returns the features for the given (user, index).
+        The features have the form [mu, bias_u[u], bias_i[i], dot(Q[i,:],P[u,:]+u_impl_fdb[u,:])]
+
+        Parameters:
+        u (int): the user index
+        i (int): the item index
+
+        Returns:
+        fv (numpy.ndarray): the feature vector
+        '''
+
+        # Initialize feature vector
+        fv = np.zeros(4)
+
+        # Fill feature vector
+        fv[0] = self.mu
+        fv[1] = self.bias_u[u]
+        fv[2] = self.bias_i[i]
+        fv[3] = np.dot(self.Q[i,:], self.P[u,:] + self.u_impl_fdb[u,:])
+
+        # Return feature vector
+        return fv
