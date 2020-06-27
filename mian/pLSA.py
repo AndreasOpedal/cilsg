@@ -12,11 +12,13 @@ def rating_gaussian_model(rating, mean, var):
 
     Param
     =========
-    rating:
-    mean: 
-    
+    rating: float                   
+    mean: float
+    var: float
+
     Return  
     =========
+    density: float
     """
     return np.exp(-(rating-mean)**2/(2*var))/(np.sqrt(2*np.pi*var))
 
@@ -25,6 +27,20 @@ def rating_laplacian_model(rating, mean, var):
     return (np.exp(-np.abs(rating-mean)/b))/(2*b)
 
 def df_to_mat(ratings, num_row, num_col):
+    """
+    Convert a rating table with information of row index, column index and associated rating to a
+    2d-array.
+
+    Param
+    ==========
+    ratings: pd.DataFrame, 3 columns with observed row index, column index and rating of full rating matrix
+    num_row: int, total number of rows
+    num_col: int, total number of columns 
+
+    Return
+    ==========
+    result: np.array, the rating matrix with zeros on unobserved values.
+    """
     result = np.zeros((num_row, num_col))
     for i in range(num_row):
         colidx = ratings[ratings['row'] == i]['col']
@@ -32,6 +48,22 @@ def df_to_mat(ratings, num_row, num_col):
     return result
 
 def normalize_rating(ratings, smooth):
+    """
+    Normalize observed rating matrix on users. Ratings of each user is subtracted by that user's smoothed 
+    rating mean and divided by smoothed standard deviation.
+
+    Param:
+    ==========
+    ratings: pd.DataFrame, 3 columns with observed row index, column index and rating of full rating matrix
+    smooth: float, smooth factor to calculate user's mean and variance
+
+    Return:
+    ==========
+    usermu: np.array, a vector of users' smoothed average with size of number of users in target rating matrix
+    uservar: np.array, a vector of user's smoothed variance with size of number of users in target rating matrix
+    result: np.array, normalized rating matrix
+    """
+
     mu = np.mean(ratings['Prediction'])
     var = np.var(ratings['Prediction'])
     rating_sum_per_user = ratings.groupby(by = 'row')['Prediction'].sum()
@@ -46,6 +78,25 @@ def normalize_rating(ratings, smooth):
 
     
 def gaussian_pLSA(ratings, num_users, num_items, num_hidden_states = 5, max_iter = 10, is_normalize = False):
+    """
+    Gaussian probabilistic latent semantic analysis via EM method
+
+    Param:
+    ===========
+    ratings:
+    num_users: int, total number of users in rating matrix
+    num_items: int, total number of items in rating matrix
+    num_hidden_states: int, number of hidden latent states, default to 5
+    max_iter: int, maximal number of iterations, default to 10
+    is_normalize: bool, whether to normalize observed rating matrix, default to False
+
+    Return:
+    ===========
+    p_z: np.array, probability matrix of latent states given user
+    mu_iz: np.array, mean value matrix given hidden state and item 
+    usermu: np.array, a vector of users' smoothed average with size of number of users in target rating matrix
+    uservar: np.array, a vector of user's smoothed variance with size of number of users in target rating matrix
+    """
     #initialization
     np.random.seed(0)
     p_z = np.random.rand(num_users, num_hidden_states) #P(z|u)
@@ -98,12 +149,39 @@ def gaussian_pLSA(ratings, num_users, num_items, num_hidden_states = 5, max_iter
     return p_z, mu_iz
 
 def predict(p_z, mu_iz, usermu=None, uservar=None):
+    """
+    Generate full rating matrix 
+
+    Param:
+    ==========
+    p_z: np.array, probability matrix of latent states given user
+    mu_iz: np.array, mean value matrix given hidden state and item
+    usermu: np.array, a vector of users' smoothed average with size of number of users in target rating matrix
+    uservar: np.array, a vector of user's smoothed variance with size of number of users in target rating matrix 
+
+    Return:
+    ==========
+    pred: np.array, full predicted rating matrix 
+    """
     pred = np.nan_to_num(p_z)@np.nan_to_num(mu_iz.T)
     if usermu is not None:
         pred = np.add(np.multiply(pred, uservar[:,np.newaxis]), usermu[:, np.newaxis])
     return pred
 
 def SVD_impute(ratings, prediction, num_keep=10):
+    """
+    Impute the matrix output from pLSA via SVD
+
+    Param:
+    ==========
+    ratings: pd.DataFrame, 3 columns with observed row index, column index and rating of full rating matrix
+    prediction: np.array, full rating matrix generated from model (e.g plsa)
+    num_keep: int, number of sigular values to keep, default to 10
+
+    Return:
+    ==========
+    svdresult: np.array, full rating matrix imputed by svd
+    """
     nr, nc = prediction.shape
     train_matrix = df_to_mat(ratings, nr, nc)
     train_r, train_c = ratings.loc[:, 'row'], ratings.loc[:, 'col']
