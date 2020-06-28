@@ -51,7 +51,7 @@ def kfold(model, data, k=10):
     model (surprise.AlgoBase): the model to test
     data (surprise.Dataset): the data to use
     k (int): the number of folds. By default 10
-    load (boolean): whether the weights of the model should be loaded
+    load (bool): whether the weights of the model should be loaded
     '''
     # Set up kfold
     dict = cross_validate(model, data, measures=['rmse'], cv=k, n_jobs=-1, verbose=True)
@@ -98,7 +98,7 @@ def dump(model, data, indexes, file_name, load_dir):
 
     Parameters:
     model (surprise.AlgoBase): the model whose predictions need to be computed
-    data (surprise.Dataset): the training data
+    data (surprise.Trainset): the training data
     indexes (list): a list of tuples, where each tuple contains the indexes (u,i) which need to be predicted
     file_name (str): the name of the csv file
     load_dir (str): the directory from which to load the weights
@@ -118,18 +118,20 @@ def dump(model, data, indexes, file_name, load_dir):
     # Dump predictions
     utils.write_predictions_to_csv(predictions, file_name)
 
-def save(model, data):
+def save(model, data, weights_file_path):
     '''
     Save the weights of the model.
     The model is trained on the whole training set.
 
     Parameters:
     model (surprise.AlgoBase): the model whose predictions need to be computed
-    data (surprise.Dataset): the training data
+    data (surprise.Trainset): the training data
+    weights_file_path (str): the path where to save the models
     '''
     # Fit model
     model.fit(data)
     model.save_weights(weights_file_path)
+    model.save_prediction_matrix(weights_file_path)
 
 if __name__ == '__main__':
     # Argparser parameters
@@ -155,7 +157,7 @@ if __name__ == '__main__':
 
     # Set up training set
     reader = Reader()
-    training_set = Dataset.load_from_df(df[['row', 'col', 'Prediction']], reader)
+    dataset = Dataset.load_from_df(df[['row', 'col', 'Prediction']], reader)
 
     # Select algo class
     algo_class = source.algo_classes[args.algo_name]
@@ -182,21 +184,21 @@ if __name__ == '__main__':
 
     # Perform requested computation
     if args.computation == 'cv':
-        cv(model, training_set)
+        cv(model, dataset)
     elif args.computation == 'target_cv':
-        target_cv(model, training_set)
+        target_cv(model, dataset)
     elif args.computation == 'kfold':
-        kfold(model, training_set, k=args.k)
+        kfold(model, dataset, k=args.k)
     elif args.computation == 'grid':
-        grid(algo_class, training_set, k=args.k)
+        grid(algo_class, dataset, k=args.k)
     elif args.computation == 'random_search':
-        random_search(algo_class, training_set, k=args.k, n_iters=args.n_iters)
+        random_search(algo_class, dataset, k=args.k, n_iters=args.n_iters)
     elif args.computation == 'dump':
         file_name = source.NEW_PREDICTIONS_DIR + args.algo_name.lower() + '-' + str(args.model_num) + '.csv'
-        training_set = training_set.build_full_trainset()
+        training_set = dataset.build_full_trainset()
         dump(model, training_set, indexes, file_name, weights_file_path)
     elif args.computation == 'save':
-        training_set = training_set.build_full_trainset()
-        save(model, training_set)
+        training_set = dataset.build_full_trainset()
+        save(model, training_set, weights_file_path)
     else:
         print('Invalid computation selected.')

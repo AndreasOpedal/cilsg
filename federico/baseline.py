@@ -14,6 +14,7 @@ import numpy as np
 import math
 from preprocess import build_weights
 from surprise import AlgoBase, Dataset, PredictionImpossible
+from surprise.prediction_algorithms.knns import KNNBasic
 
 class Mean(AlgoBase):
     '''
@@ -80,8 +81,9 @@ class SVD(AlgoBase):
 
         Parameters:
         n_factors (int): the number of latent features. By default 160
-        impute_strategy (object): the strategy to use to impute the non-rated items. The options are None (0), 'ones', 'mean', 'median',
-                                  'neg_eps' a small negative value, and 'pos_eps' a small positive value. By default None
+        impute_strategy (object): the strategy to use to impute the non-rated items. The options are None (0), 'ones', 'neg_ones',
+                                  'mean', 'median', 'neg_eps' a small negative value, and 'pos_eps'a small positive value.
+                                  By default None
         eps (float): the epsilon used for imputing (if selected). By default 1e-3
         '''
 
@@ -126,6 +128,8 @@ class SVD(AlgoBase):
         # Impute empty ratings (if instructed)
         if self.impute_strategy == 'ones':
             X[X<1] = 1
+        elif self.impute_strategy == 'neg_ones':
+            X[X<1] = -1
         elif self.impute_strategy == 'mean':
             X[X<1] = self.trainset.global_mean
         elif self.impute_strategy == 'median':
@@ -135,6 +139,12 @@ class SVD(AlgoBase):
             X[X<1] = -self.eps
         elif self.impute_strategy == 'pos_eps':
             X[X<1] = self.eps
+
+        # T = np.load('array-for-svd.pkl', allow_pickle=True)
+        # for u in range(self.trainset.n_users):
+        #     for i in range(self.trainset.n_items):
+        #         if X[u,i] < 1:
+        #             X[u,i] = T[u,i]
 
         # Compute the SVD of X
         U, S, Vt = np.linalg.svd(X)
@@ -207,7 +217,7 @@ class ALS(AlgoBase):
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
-        verbose (boolean): whether the algorithm should be verbose. By default False
+        verbose (bool): whether the algorithm should be verbose. By default False
         '''
 
         self.n_factors = n_factors

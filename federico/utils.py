@@ -1,33 +1,8 @@
 import pandas as pd
 import numpy as np
-from scipy.sparse import dok_matrix
 import csv
 import math
 import os
-from random import shuffle
-
-def read_data_as_matrix(file_path):
-    '''
-    Reads the data from the given file path and return a sparse matrix holding the data.
-
-    Parameters:
-    file_path (string): the file path to read
-
-    Returns:
-    X (scipy.sparse.dok_matrix): sparse matrix representing the data
-    '''
-
-    data_train_raw = pd.read_csv(file_path).values
-
-    X = dok_matrix((10000, 1000))
-
-    for i in range(0, data_train_raw.shape[0]):
-        indices, value = data_train_raw[i,0], int(data_train_raw[i,1])
-        indices = indices.split('_')
-        row, column = int(indices[0][1:])-1, int(indices[1][1:])-1 # indexing in the data starts from 1
-        X[row, column] = value
-
-    return X
 
 def read_submission_indexes(file_path):
     '''
@@ -80,28 +55,6 @@ def read_data_as_data_frame(file_path):
     data_train_df = data_train_raw.loc[:,['row', 'col', 'Prediction']]
 
     return data_train_df
-
-def data_frame_to_sparse_matrix(df):
-    '''
-    Converts the given data frame into a sparse matrix
-
-    Parameters:
-    df (pandas.DataFrame): the data frame to transform
-
-    Returns:
-    X (scipy.sparse.dok_matrix): the corresponding sparse matrix
-    '''
-
-    X = dok_matrix((10000, 1000))
-
-    # print(df.shape[0])
-
-    for i in np.arange(df.shape[0]):
-        row, col = int(df.iloc[i,1]), int(df.iloc[i,2])
-        pred = int(df.iloc[i,3])
-        X[row, col] = pred
-
-    return X
 
 def write_predictions_to_csv(predictions, file_path):
     '''

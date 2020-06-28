@@ -46,7 +46,7 @@ class SGDheu(AlgoBase):
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
-        verbose (boolean): whether the algorithm should be verbose. By default False
+        verbose (bool): whether the algorithm should be verbose. By default False
         '''
 
         AlgoBase.__init__(self)
@@ -222,22 +222,24 @@ class SGDheu(AlgoBase):
         '''
         Save the weights of the model in the given directory
 
+        Parameters:
         dir (str): the directory to write the files into
         '''
 
         # Save mean
-        np.save(self.mu, dir+'mu')
+        np.save(dir+'mu', self.mu)
         # Save biases
-        np.save(self.bias_u, dir+'bias_u')
-        np.save(self.bias_i, dir+'bias_i')
+        np.save(dir+'bias_u', self.bias_u)
+        np.save(dir+'bias_i', self.bias_i)
         # Save P, Q
-        np.save(self.P, dir+'P')
-        np.save(self.Q, dir+'Q')
+        np.save(dir+'P', self.P)
+        np.save(dir+'Q', self.Q)
 
     def load_weights(self, dir):
         '''
         Loads the weights of the model from the given directory
 
+        Parameters:
         dir (str): the directory to write the files into
         '''
 
@@ -249,31 +251,6 @@ class SGDheu(AlgoBase):
         # Load P, Q
         self.P = np.load(dir+'P.npy')
         self.Q = np.load(dir+'Q.npy')
-
-    def get_features(self, u, i):
-        '''
-        Returns the features for the given (user, index).
-        The features have the form [mu, bias_u[u], bias_i[i], dot(P[u,:],Q[i,:])]
-
-        Parameters:
-        u (int): the user index
-        i (int): the item index
-
-        Returns:
-        fv (numpy.ndarray): the feature vector
-        '''
-
-        # Initialize feature vector
-        fv = np.zeros(4)
-
-        # Fill feature vector
-        fv[0] = self.mu
-        fv[1] = self.bias_u[u]
-        fv[2] = self.bias_i[i]
-        fv[3] = np.dot(self.P[u,:], self.Q[i,:])
-
-        # Return feature vector
-        return fv
 
 class SGDPP2(AlgoBase):
     '''
@@ -300,13 +277,14 @@ class SGDPP2(AlgoBase):
         reg_qi (float): the regularization strength for Q. By default 0.5
         lambda_bu (float): the regularizer for the initialization of b[u]. By default 1
         lambda_bi (float): the regularizer for the initialization of b[i]. By default 1
-        lambda_bi (float): the regularizer for the initialization of the item factors. By default 1
-        impute_strategy (string): the strategy to use to impute the non-rated items. The options are None (0), 'mean', and
-                                  'median'. By default None
+        lambda_yj (float): the regularizer for the initialization of the item factors. By default 1
+        impute_strategy (object): the strategy to use to impute the non-rated items. The options are None (0), 'ones', 'neg_ones',
+                                  'mean', 'median', 'neg_eps' a small negative value, and 'pos_eps'a small positive value.
+                                  By default None
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
-        verbose (boolean): whether the algorithm should be verbose. By default False
+        verbose (bool): whether the algorithm should be verbose. By default False
         '''
 
         AlgoBase.__init__(self)
@@ -506,26 +484,28 @@ class SGDPP2(AlgoBase):
 
     def save_weights(self, dir):
         '''
-        Save the weights of the model in the given directory
+        Save the weights of the model in the given directory.
 
+        Parameters:
         dir (str): the directory to write the files into
         '''
 
         # Save mean
-        np.save(self.mu, dir+'mu')
+        np.save(dir+'mu', self.mu)
         # Save biases
-        np.save(self.bias_u, dir+'bias_u')
-        np.save(self.bias_i, dir+'bias_i')
+        np.save(dir+'bias_u', self.bias_u)
+        np.save(dir+'bias_i', self.bias_i)
         # Save item factors
-        np.save(self.u_impl_fdb, dir+'u_impl_fdb')
+        np.save(dir+'u_impl_fdb', self.u_impl_fdb)
         # Save P, Q
-        np.save(self.P, dir+'P')
-        np.save(self.Q, dir+'Q')
+        np.save(dir+'P', self.P)
+        np.save(dir+'Q', self.Q)
 
     def load_weights(self, dir):
         '''
         Loads the weights of the model from the given directory
 
+        Parameters:
         dir (str): the directory to write the files into
         '''
 
@@ -539,28 +519,3 @@ class SGDPP2(AlgoBase):
         # Load P, Q
         self.P = np.load(dir+'P.npy')
         self.Q = np.load(dir+'Q.npy')
-
-    def get_features(self, u, i):
-        '''
-        Returns the features for the given (user, index).
-        The features have the form [mu, bias_u[u], bias_i[i], dot(Q[i,:],P[u,:]+u_impl_fdb[u,:])]
-
-        Parameters:
-        u (int): the user index
-        i (int): the item index
-
-        Returns:
-        fv (numpy.ndarray): the feature vector
-        '''
-
-        # Initialize feature vector
-        fv = np.zeros(4)
-
-        # Fill feature vector
-        fv[0] = self.mu
-        fv[1] = self.bias_u[u]
-        fv[2] = self.bias_i[i]
-        fv[3] = np.dot(self.Q[i,:], self.P[u,:] + self.u_impl_fdb[u,:])
-
-        # Return feature vector
-        return fv
