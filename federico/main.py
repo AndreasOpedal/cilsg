@@ -155,7 +155,7 @@ if __name__ == '__main__':
     # Read list of indexes (to predict)
     indexes = utils.read_submission_indexes(source.PREDICTION_INDEXES_PATH)
 
-    # Set up training set
+    # Set up dataset
     reader = Reader()
     dataset = Dataset.load_from_df(df[['row', 'col', 'Prediction']], reader)
 
