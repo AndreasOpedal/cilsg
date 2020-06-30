@@ -56,10 +56,10 @@ instances['SGDPP2'][23] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init
 instances['SGDPP2'][24] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, impute_strategy='neg_eps', conf=0.49)
 instances['ALS'][1] = ALS(n_epochs=5, init_std=0.01, reg=0.08)
 instances['SGDPP2'][25] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, impute_strategy='neg_ones', conf=None)
-instances['WeightedAvg'][1] = WeightedAvg([instances['SGDPP2'][14], instances['SGDheu'][44]], n_epochs=10, lr=0.1)
-instances['WeightedAvg'][2] = WeightedAvg([instances['SGDPP2'][14], instances['SGDheu'][44]], n_epochs=2, lr=0.15)
-instances['SVDthr'][1] = SVDthr(step_size=5, tao=10000, n_epochs=10, l=1)
+instances['SVDthr'][1] = SVDthr(step_size=2, tao=10000, n_epochs=85)
 instances['pLSA'][1] = pLSA()
+instances['WeightedAvg'][1] = WeightedAvg([instances['SGDPP2'][14], instances['SGDheu'][44]], n_epochs=10, lr=0.1)
+instances['WeightedAvg'][2] = WeightedAvg([instances['SVDthr'][1], instances['SGDPP2'][14], instances['pLSA'][1]], n_epochs=5, lr=0.001)
 
 ###############################################################################################
 

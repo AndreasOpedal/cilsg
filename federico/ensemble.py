@@ -55,12 +55,10 @@ class WeightedAvg(AlgoBase):
         # Number of base models
         self.n = len(self.base_models)
 
-        if self.verbose:
-            print('Training base models...')
         for j in range(self.n):
+            if self.verbose:
+                print('Training base model ' + str(j+1) + ' of ' + str(self.n) + '...')
             self.base_models[j].fit(self.trainset)
-        if self.verbose:
-            print('Finished training base models.')
 
         # Call SGD
         self.sgd()
