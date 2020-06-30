@@ -10,16 +10,14 @@ class SVDthr(AlgoBase):
     Implementation of SVD thresholding.
     '''
 
-    def __init__(self, n_epochs=10, tao=10000, step_size=2, rr=1, l=5, low=1, high=5, conf=None, verbose=False):
+    def __init__(self, tao=10000, eps=0.1, step_size=1, low=1, high=5, conf=None, verbose=False):
         '''
         Initializes the class with the given parameters.
 
         Parameters:
-        n_epochs (int): the number of epochs. By default
         tao (float): by how much should singular values be reduced. By default 10000
-        step_size (float): the step size to apply in the projection. By default 2
-        rr (int): ???. By default 1
-        l (int): ???. By default 5
+        eps (float): the tolerance on the training error. By default 0.1
+        step_size (float): the step size to apply in the projection. By default 1
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
@@ -28,11 +26,9 @@ class SVDthr(AlgoBase):
 
         AlgoBase.__init__(self)
 
-        self.n_epochs = n_epochs
         self.tao = tao
+        self.eps = eps
         self.step_size = step_size
-        self.rr = rr
-        self.l = l
         self.low = low
         self.high = high
         self.conf = conf
@@ -78,18 +74,26 @@ class SVDthr(AlgoBase):
         X = np.zeros((self.trainset.n_users,self.trainset.n_items))
         Y = np.zeros((self.trainset.n_users,self.trainset.n_items))
 
+        # Initialize heuristics to decide how many singular values to be used for the reconstruction
+        r = 1
+        l = 5
+
+        # Current epoch counter
+        current_epoch = 0
+
+        # Initialize error such that it is larger than the tolerance
+        err = self.eps+1
+
         # Optimize
-        for current_epoch in range(self.n_epochs):
-            if self.verbose:
-                print('Processing epoch {}'.format(current_epoch+1))
+        while err > self.eps:
             # Shrinkage
             sigma_min = self.tao + 1
-            s = max(self.rr,1)
+            s = max(r,1)
             while sigma_min > self.tao:
                 U, sigma, Vh = linalg.svds(csc_matrix(Y), k=min(s,999))
                 sigma_min = min(sigma)
-                s += self.l
-            self.rr = np.count_nonzero(sigma > self.tao)
+                s += l
+            r = np.count_nonzero(sigma > self.tao)
             sigma_diag = np.diag(sigma)
             sigma_new = sigma_diag - self.tao
             sigma_new[sigma_new < 0] = 0
@@ -100,6 +104,12 @@ class SVDthr(AlgoBase):
             proj[non_zero_indeces] = (A - X)[non_zero_indeces]
             # Step forward
             Y += self.step_size*proj
+            # Update error
+            err = np.linalg.norm((X-A)[non_zero_indeces], ord=2)/np.linalg.norm(A[non_zero_indeces])
+            if self.verbose:
+                print('Error at epoch ' + str(current_epoch+1) + ': ' + str(err))
+            # Update epoch counter
+            current_epoch += 1
 
         # Final shrinkage
         U, sigma, Vh = np.linalg.svd(Y)
