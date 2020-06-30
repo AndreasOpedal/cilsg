@@ -143,12 +143,13 @@ if __name__ == '__main__':
     parser.add_argument('--n_iters', type=int, default=100, help='the number of iterations to perform in random search (default: 100)')
     parser.add_argument('--load', type=bool, default=False, help='whether the weights of the model should be loaded (default: False)')
     parser.add_argument('--verbose', type=bool, default=False, help='whether the algorithm should be verbose (default: False)')
+    parser.add_argument('--seed', type=int, default=0, help='the random seed (default: 0)')
 
     # Parse arguments
     args = parser.parse_args()
 
     # Set seed
-    np.random.seed(source.SEED)
+    np.random.seed(args.seed)
 
     # Read data as a DataFrame
     df = utils.read_data_as_data_frame(source.TRAIN_DATA_PATH)
