@@ -67,8 +67,12 @@ class SVDthr(AlgoBase):
         # Prepare training matrix A
         A = np.zeros((self.trainset.n_users,self.trainset.n_items))
 
+        # Fill A
         for u, i, r in self.trainset.all_ratings():
             A[u,i] = r
+
+        # Get non-zero indeces
+        non_zero_indeces = np.nonzero(A)
 
         # Initialize X, Y
         X = np.zeros((self.trainset.n_users,self.trainset.n_items))
@@ -91,7 +95,9 @@ class SVDthr(AlgoBase):
             sigma_new[sigma_new < 0] = 0
             X = np.dot(U, np.dot(sigma_new, Vh))
             # Projection
-            proj = A - X
+            proj = np.zeros((self.trainset.n_users,self.trainset.n_items))
+            #print(non_zero_indeces)
+            proj[non_zero_indeces] = (A - X)[non_zero_indeces]
             # Step forward
             Y += self.step_size*proj
 
