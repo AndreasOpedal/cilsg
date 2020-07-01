@@ -11,11 +11,11 @@ def build_weights(trainset):
     trainset (surprise.Trainset): the training data
 
     Returns:
-    weights (numpy.ndarray): the vectors of weights with size for each rating
+    weights (numpy.ndarray): the matrix of weights with size (trainset.n_users, trainset.n_items)
     '''
 
     # Define weights matrix
-    weights = np.zeros(trainset.n_ratings,)
+    weights = np.zeros((trainset.n_users, trainset.n_items))
 
     # Define array holding the ratings
     freqs = np.zeros(5)
@@ -30,13 +30,9 @@ def build_weights(trainset):
     # Flip array
     freqs = np.flip(freqs)
 
-    # Weights row counter
-    rows = 0
-
     # Associate frequencies to weights
-    for _, _, r in trainset.all_ratings():
-        weights[rows] = freqs[int(r)-1]
-        rows += 1
+    for u, i, r in trainset.all_ratings():
+        weights[u,i] = freqs[int(r)-1]
 
     # Return weights
     return weights
@@ -56,7 +52,7 @@ def over_sample(trainset):
     '''
 
     # Repetitions array
-    reps = np.zeros(5, dtype=np.int64)
+    reps = np.zeros(5)
 
     # Fill reps
     for _, _, r in trainset.all_ratings():

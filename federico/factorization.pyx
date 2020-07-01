@@ -17,6 +17,7 @@ import numpy as np
 import math
 from surprise import AlgoBase, PredictionImpossible
 from baseline import SVD
+import utils
 
 class SGDheu(AlgoBase):
     '''
@@ -46,7 +47,7 @@ class SGDheu(AlgoBase):
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
-        verbose (bool): whether the algorithm should be verbose. By default False
+        verbose (boolean): whether the algorithm should be verbose. By default False
         '''
 
         AlgoBase.__init__(self)
@@ -76,6 +77,7 @@ class SGDheu(AlgoBase):
         self.bias_u = None
         self.bias_i = None
         self.mu = None
+        self.reps = None
 
     def fit(self, trainset):
         '''
@@ -191,7 +193,7 @@ class SGDheu(AlgoBase):
         u (int): the user index
         i (int): the item index
 
-        Returns:
+        Retuns:
         rui (float): the prediction
         '''
 
@@ -222,24 +224,22 @@ class SGDheu(AlgoBase):
         '''
         Save the weights of the model in the given directory
 
-        Parameters:
         dir (str): the directory to write the files into
         '''
 
         # Save mean
-        np.save(dir+'mu', self.mu)
+        np.save(self.mu, dir+'mu')
         # Save biases
-        np.save(dir+'bias_u', self.bias_u)
-        np.save(dir+'bias_i', self.bias_i)
+        np.save(self.bias_u, dir+'bias_u')
+        np.save(self.bias_i, dir+'bias_i')
         # Save P, Q
-        np.save(dir+'P', self.P)
-        np.save(dir+'Q', self.Q)
+        np.save(self.P, dir+'P')
+        np.save(self.Q, dir+'Q')
 
     def load_weights(self, dir):
         '''
         Loads the weights of the model from the given directory
 
-        Parameters:
         dir (str): the directory to write the files into
         '''
 
@@ -277,14 +277,13 @@ class SGDPP2(AlgoBase):
         reg_qi (float): the regularization strength for Q. By default 0.5
         lambda_bu (float): the regularizer for the initialization of b[u]. By default 1
         lambda_bi (float): the regularizer for the initialization of b[i]. By default 1
-        lambda_yj (float): the regularizer for the initialization of the item factors. By default 1
-        impute_strategy (object): the strategy to use to impute the non-rated items. The options are None (0), 'ones', 'neg_ones',
-                                  'mean', 'median', 'neg_eps' a small negative value, and 'pos_eps'a small positive value.
-                                  By default None
+        lambda_bi (float): the regularizer for the initialization of the item factors. By default 1
+        impute_strategy (string): the strategy to use to impute the non-rated items. The options are None (0), 'mean', and
+                                  'median'. By default None
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
-        verbose (bool): whether the algorithm should be verbose. By default False
+        verbose (boolean): whether the algorithm should be verbose. By default False
         '''
 
         AlgoBase.__init__(self)
@@ -311,7 +310,6 @@ class SGDPP2(AlgoBase):
         self.verbose = verbose
 
         self.trainset = None
-
         self.P = None
         self.Q = None
         self.u_impl_fdb = None
@@ -375,7 +373,7 @@ class SGDPP2(AlgoBase):
         cdef double lr0_qi = lr_qi
 
         cdef int u, i, f
-        cdef double r, err, dot, puf, qif
+        cdef double r, err, dot, puf, qif, gradient_pu, gradient_qi
 
         # Initialize P, Q
         P = np.random.normal(self.init_mean, self.init_std, (self.trainset.n_users,self.n_factors))
@@ -455,7 +453,7 @@ class SGDPP2(AlgoBase):
         u (int): the user index
         i (int): the item index
 
-        Returns:
+        Retuns:
         rui (float): the prediction
         '''
 
@@ -484,28 +482,26 @@ class SGDPP2(AlgoBase):
 
     def save_weights(self, dir):
         '''
-        Save the weights of the model in the given directory.
+        Save the weights of the model in the given directory
 
-        Parameters:
         dir (str): the directory to write the files into
         '''
 
         # Save mean
-        np.save(dir+'mu', self.mu)
+        np.save(self.mu, dir+'mu')
         # Save biases
-        np.save(dir+'bias_u', self.bias_u)
-        np.save(dir+'bias_i', self.bias_i)
+        np.save(self.bias_u, dir+'bias_u')
+        np.save(self.bias_i, dir+'bias_i')
         # Save item factors
-        np.save(dir+'u_impl_fdb', self.u_impl_fdb)
+        np.save(self.u_impl_fdb, dir+'u_impl_fdb')
         # Save P, Q
-        np.save(dir+'P', self.P)
-        np.save(dir+'Q', self.Q)
+        np.save(self.P, dir+'P')
+        np.save(self.Q, dir+'Q')
 
     def load_weights(self, dir):
         '''
         Loads the weights of the model from the given directory
 
-        Parameters:
         dir (str): the directory to write the files into
         '''
 

@@ -51,7 +51,7 @@ def kfold(model, data, k=10):
     model (surprise.AlgoBase): the model to test
     data (surprise.Dataset): the data to use
     k (int): the number of folds. By default 10
-    load (bool): whether the weights of the model should be loaded
+    load (boolean): whether the weights of the model should be loaded
     '''
     # Set up kfold
     dict = cross_validate(model, data, measures=['rmse'], cv=k, n_jobs=-1, verbose=True)
@@ -98,7 +98,7 @@ def dump(model, data, indexes, file_name, load_dir):
 
     Parameters:
     model (surprise.AlgoBase): the model whose predictions need to be computed
-    data (surprise.Trainset): the training data
+    data (surprise.Dataset): the training data
     indexes (list): a list of tuples, where each tuple contains the indexes (u,i) which need to be predicted
     file_name (str): the name of the csv file
     load_dir (str): the directory from which to load the weights
@@ -118,20 +118,18 @@ def dump(model, data, indexes, file_name, load_dir):
     # Dump predictions
     utils.write_predictions_to_csv(predictions, file_name)
 
-def save(model, data, weights_file_path):
+def save(model, data):
     '''
     Save the weights of the model.
     The model is trained on the whole training set.
 
     Parameters:
     model (surprise.AlgoBase): the model whose predictions need to be computed
-    data (surprise.Trainset): the training data
-    weights_file_path (str): the path where to save the models
+    data (surprise.Dataset): the training data
     '''
     # Fit model
     model.fit(data)
     model.save_weights(weights_file_path)
-    model.save_prediction_matrix(weights_file_path)
 
 if __name__ == '__main__':
     # Argparser parameters
@@ -143,22 +141,21 @@ if __name__ == '__main__':
     parser.add_argument('--n_iters', type=int, default=100, help='the number of iterations to perform in random search (default: 100)')
     parser.add_argument('--load', type=bool, default=False, help='whether the weights of the model should be loaded (default: False)')
     parser.add_argument('--verbose', type=bool, default=False, help='whether the algorithm should be verbose (default: False)')
-    parser.add_argument('--seed', type=int, default=0, help='the random seed (default: 0)')
 
     # Parse arguments
     args = parser.parse_args()
 
     # Set seed
-    np.random.seed(args.seed)
+    np.random.seed(source.SEED)
 
     # Read data as a DataFrame
     df = utils.read_data_as_data_frame(source.TRAIN_DATA_PATH)
     # Read list of indexes (to predict)
     indexes = utils.read_submission_indexes(source.PREDICTION_INDEXES_PATH)
 
-    # Set up dataset
+    # Set up training set
     reader = Reader()
-    dataset = Dataset.load_from_df(df[['row', 'col', 'Prediction']], reader)
+    training_set = Dataset.load_from_df(df[['row', 'col', 'Prediction']], reader)
 
     # Select algo class
     algo_class = source.algo_classes[args.algo_name]
@@ -185,21 +182,21 @@ if __name__ == '__main__':
 
     # Perform requested computation
     if args.computation == 'cv':
-        cv(model, dataset)
+        cv(model, training_set)
     elif args.computation == 'target_cv':
-        target_cv(model, dataset)
+        target_cv(model, training_set)
     elif args.computation == 'kfold':
-        kfold(model, dataset, k=args.k)
+        kfold(model, training_set, k=args.k)
     elif args.computation == 'grid':
-        grid(algo_class, dataset, k=args.k)
+        grid(algo_class, training_set, k=args.k)
     elif args.computation == 'random_search':
-        random_search(algo_class, dataset, k=args.k, n_iters=args.n_iters)
+        random_search(algo_class, training_set, k=args.k, n_iters=args.n_iters)
     elif args.computation == 'dump':
         file_name = source.NEW_PREDICTIONS_DIR + args.algo_name.lower() + '-' + str(args.model_num) + '.csv'
-        training_set = dataset.build_full_trainset()
+        training_set = training_set.build_full_trainset()
         dump(model, training_set, indexes, file_name, weights_file_path)
     elif args.computation == 'save':
-        training_set = dataset.build_full_trainset()
-        save(model, training_set, weights_file_path)
+        training_set = training_set.build_full_trainset()
+        save(model, training_set)
     else:
         print('Invalid computation selected.')

@@ -8,6 +8,6 @@ from Cython.Build import cythonize
 import numpy
 
 setup(
-    ext_modules=cythonize('*.pyx'),
+    ext_modules=cythonize('factorization.pyx'),
     include_dirs=[numpy.get_include()]
 )
