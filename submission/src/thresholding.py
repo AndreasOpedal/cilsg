@@ -1,4 +1,3 @@
-# cimport numpy as np
 import numpy as np
 from scipy.sparse import linalg
 from scipy.sparse import csc_matrix

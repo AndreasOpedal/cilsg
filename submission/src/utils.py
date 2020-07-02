@@ -86,16 +86,3 @@ def write_predictions_to_csv(predictions, file_path):
             file_row['Prediction'] = pred
             # Write file row
             writer.writerow(file_row)
-
-def create_dir(dir_path):
-    '''
-    Creates the given directory if it does not exist
-
-    Parameters:
-    dir_path (str): the directory to create
-    '''
-
-    # Check if directory already exists
-    if not os.path.isdir(dir_path):
-        # Create directory
-        os.mkdir(dir_path)
