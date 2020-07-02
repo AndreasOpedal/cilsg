@@ -13,6 +13,7 @@ All algorithms follow the same structure as Simon Funk's SVD. The implemented al
 
 cimport numpy as np
 import numpy as np
+import math
 from surprise import AlgoBase, PredictionImpossible
 from baseline import SVD
 

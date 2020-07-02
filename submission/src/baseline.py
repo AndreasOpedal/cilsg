@@ -12,7 +12,6 @@ The implemented algorithms are:
 
 import numpy as np
 import math
-from preprocess import build_weights
 from surprise import AlgoBase, Dataset, PredictionImpossible
 from surprise.prediction_algorithms.knns import KNNBasic
 
