@@ -19,12 +19,12 @@ Notebooks are meant to be an aid the understanding on how each algorithm works, 
 
 The following packages are needed (Python 3.8.0):
 
-* numpy=1.17.4
-* pandas=0.25.3
-* scikit-surprise=1.1.0
-* Cython=0.29.16
-* matplotlib=3.1.2
-* tqdm=4.45.0
++ numpy=1.17.4
++ pandas=0.25.3
++ scikit-surprise=1.1.0
++ Cython=0.29.16
++ matplotlib=3.1.2
++ tqdm=4.45.0
 
 ## Setup
 
@@ -48,7 +48,12 @@ We implemented the following algorithms:
 + *VAE* (??)
 + *Ensemble* (??)
 
-We organize these algorithms (with the exception of *VAE* and *Ensemble*) in the `src/source.py` file.
+We organize these algorithms (with the exception of *VAE* and *Ensemble*) in the `src/source.py` file. Two dictionaries are used to organize algorithm classes and instances. The `algo_classes` dictionary maps algorithms' names to algorithms Python classes, e.g. `algo_classes['Mean'] = Mean`. The `instances` dictionary maps algorithms' names to a dictionary of that algorithm's instances. Instances are mapped by a unique number. For example, the default version of the *Mean* algorithm is mapped as `instances['Mean'][1] = Mean()`.
+How to add a new instance of an algorithm? Say that we want to run *SVD* with a different number of factors: then we add to the file the following line
+
+```
+instances['SVD'][2] = SVD(n_factors=2)
+```
 
 ## Modes
 
@@ -66,7 +71,7 @@ Algorithms can be executed in the following modes:
 To execute an algorithm with a given mode, run the following command:
 
 ```
-python3 src/main.py mode algo_class
+python3 src/main.py mode algorithm
 ```
 
 The following options are available:
@@ -80,4 +85,4 @@ The following options are available:
 
 ## Notebooks
 
-As mentioned before, notebooks are meant to give the user a better understanding of the code. (Maybe say that there are plots, ...)
+Notebooks are meant to give the user a better understanding of the code implemented in `src/`. Their goal is to provide the mathematical background, clarify the code, and creating plots to better illustrate how the algorithm learns the weights. 
