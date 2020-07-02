@@ -3,19 +3,17 @@ This file which contains constants, algorithm classes, model instances, and para
 '''
 
 from scipy import stats
-from factorization import SGDheu, SGDPP2
-from baseline import ALS
-from ensemble import WeightedAvg
+from factorization import SGDPP2
+from baseline import Mean, SVD, ALS
 from thresholding import SVDthr
 from plsa import pLSA
 
 ###############################################################################################
 
 # Constants
-TRAIN_DATA_PATH = '../data/data_train.csv'
-PREDICTION_INDEXES_PATH = '../data/sampleSubmission.csv'
+TRAIN_DATA_PATH = '../data/data-train.csv'
+PREDICTION_INDEXES_PATH = '../data/sample-submission.csv'
 NEW_PREDICTIONS_DIR = 'predictions/'
-WEIGHTS_DIR = 'weights/'
 
 ###############################################################################################
 
@@ -23,10 +21,10 @@ WEIGHTS_DIR = 'weights/'
 algo_classes = {}
 
 # Initialize algo_classes
-algo_classes['SGDheu'] = SGDheu
 algo_classes['SGDPP2'] = SGDPP2
+algo_classes['Mean'] = Mean
+algo_classes['SVD'] = SVD
 algo_classes['ALS'] = ALS
-algo_classes['WeightedAvg'] = WeightedAvg
 algo_classes['SVDthr'] = SVDthr
 algo_classes['pLSA'] = pLSA
 
@@ -36,66 +34,36 @@ algo_classes['pLSA'] = pLSA
 instances = {}
 
 # Initialize instances
-instances['SGDheu'] = {}
 instances['SGDPP2'] = {}
+instances['Mean'] = {}
+instances['SVD'] = {}
 instances['ALS'] = {}
-instances['WeightedAvg'] = {}
 instances['SVDthr'] = {}
 instances['pLSA'] = {}
 
 # Index single algorithm classes. Further model instances can manually be added.
-instances['SGDheu'][3] = SGDheu(n_factors=183, n_epochs=34, init_mean=0, init_std=0.01, lr_pu=0.015, lr_qi=0.015, alpha_pu=0, alpha_qi=0, decay_pu=0, decay_qi=0, reg_pu=0.075, reg_qi=0.075, lambda_bu=10, lambda_bi=15, conf=0.45)
-instances['SGDheu'][44] = SGDheu(n_factors=192, n_epochs=95, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, conf=None)
-instances['SGDPP2'][14] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, conf=None)
-instances['SGDPP2'][20] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, impute_strategy='pos_eps', conf=None)
-instances['SGDPP2'][21] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.01, lr_qi=0.01, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.03, reg_pu=0.01, reg_qi=0.01, lambda_bu=25, lambda_bi=5, lambda_yj=50, impute_strategy='pos_eps', conf=None)
-instances['SGDPP2'][22] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.6, alpha_qi=0.6, decay_pu=0, decay_qi=0, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, impute_strategy='neg_eps', conf=None)
-instances['SGDPP2'][23] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0, alpha_qi=0, decay_pu=0, decay_qi=0, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, conf=None)
-instances['SGDPP2'][24] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, impute_strategy='neg_eps', conf=0.49)
-instances['ALS'][1] = ALS(n_epochs=5, init_std=0.01, reg=0.08)
-instances['SGDPP2'][25] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, impute_strategy='neg_ones', conf=None)
+instances['SGDPP2'][1] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, conf=None)
+instances['Mean'][1] = Mean()
+instances['SVD'][1] = SVD()
+instances['ALS'][1] = ALS()
 instances['SVDthr'][1] = SVDthr()
 instances['pLSA'][1] = pLSA()
-instances['WeightedAvg'][1] = WeightedAvg([instances['SGDPP2'][14], instances['SGDheu'][44]], n_epochs=10, lr=0.1)
-instances['WeightedAvg'][2] = WeightedAvg([instances['SVDthr'][1], instances['SGDPP2'][14], instances['pLSA'][1]], n_epochs=5, lr=0.001)
 
 ###############################################################################################
 
-# Parameter grid for Grid Search
+# Example parameter grid for Grid Search, for the pLSA algorithm
 param_grid = {
-    'n_factors': [192],
-    'n_epochs': [85, 90, 95],
-    'init_mean': [0.2],
-    'init_std': [0.005],
-    'lr_pu': [0.0025, 0.005],
-    'lr_qi': [0.0025, 0.005],
-    'alpha_pu': [0.3, 0.325],
-    'alpha_qi': [0.3, 0.325],
-    'decay_pu': [0.01],
-    'decay_qi': [0.01],
-    'reg_pu': [0.06],
-    'reg_qi': [0.065],
-    'lambda_bu': [25],
-    'lambda_bi': [0.5]
+    'n_latent': [5, 10, 15],
+    'n_epochs': [2, 5],
+    'to_normalize': [False, True],
+    'alpha': [2, 5]
 }
 
 ###############################################################################################
 
-# Parameter distributions for Random Search
+# Example parameter distributions for Random Search, for the pLSA algorithm
+# Note: for float types, use stats.uniform(start, delta), such that random values will be in range [start, start+delta]
 dist_grid = {
-    'n_factors': stats.randint(190, 194),
-    'n_epochs': stats.randint(80, 95),
-    'init_mean': stats.uniform(0.175, 0.05),
-    'init_std': stats.uniform(0.004, 0.002),
-    'lr_pu': stats.uniform(0.0012, 0.0007),
-    'lr_qi': stats.uniform(0.0012, 0.0007),
-    'alpha_pu': stats.uniform(0.2, 0.25),
-    'alpha_qi': stats.uniform(0.2, 0.25),
-    'decay_pu': stats.uniform(0.01, 0.02),
-    'decay_qi': stats.uniform(0.04, 0.03),
-    'reg_pu': stats.uniform(0.05, 0.02),
-    'reg_qi': stats.uniform(0.055, 0.02),
-    'lambda_bu': stats.randint(20, 25),
-    'lambda_bi': stats.uniform(0.4, 0.2),
-    'lambda_yj': stats.randint(50, 55)
+    'n_latent': stats.randint(5, 10),
+    'n_epochs': stats.randint(2, 5)
 }
