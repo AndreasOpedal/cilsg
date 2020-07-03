@@ -103,12 +103,8 @@ def dump(model, data, indexes, file_name, load_dir):
     file_name (str): the name of the csv file
     load_dir (str): the directory from which to load the weights
     '''
-    # Fit model (if weights not loaded)
-    if load_dir != '':
-        model.load_weights(weights_file_path)
-        model.trainset = data
-    else:
-        model.fit(data)
+    # Fit model
+    model.fit(data)
     # Predictions
     predictions = []
     for index in indexes:
@@ -118,30 +114,14 @@ def dump(model, data, indexes, file_name, load_dir):
     # Dump predictions
     utils.write_predictions_to_csv(predictions, file_name)
 
-def save(model, data, weights_file_path):
-    '''
-    Save the weights of the model.
-    The model is trained on the whole training set.
-
-    Parameters:
-    model (surprise.AlgoBase): the model whose predictions need to be computed
-    data (surprise.Trainset): the training data
-    weights_file_path (str): the path where to save the models
-    '''
-    # Fit model
-    model.fit(data)
-    model.save_weights(weights_file_path)
-    model.save_prediction_matrix(weights_file_path)
-
 if __name__ == '__main__':
     # Argparser parameters
     parser = argparse.ArgumentParser(description='Collaborative Filtering')
-    parser.add_argument('computation', type=str, metavar='computation', help='the computation to perform (options: cv, target_cv, kfold, grid, random_search, dump, save)')
-    parser.add_argument('algo_name', type=str, metavar='algo_name', help='the name of the algorithm to use (see names of classes in factorization.pyx and baseline.py)')
-    parser.add_argument('--model_num', type=int, default=-1, help='the number of the model (instance of an algo_class) to use (default: -1, i.e. none)')
+    parser.add_argument('exec_mode', type=str, metavar='execution mode', help='the execution mode (options: cv, target_cv, kfold, grid, random_search, dump, save)')
+    parser.add_argument('algo_class', type=str, metavar='algorithm class', help='the algorithm class to use (see names of classes in factorization.pyx and baseline.py)')
+    parser.add_argument('--model_num', type=int, default=1, help='the number of the model (instance of an algo_class) to use (default: 1)')
     parser.add_argument('--k', type=int, default=10, help='the k for kfold cross-validation (default: 10)')
-    parser.add_argument('--n_iters', type=int, default=100, help='the number of iterations to perform in random search (default: 100)')
-    parser.add_argument('--load', type=bool, default=False, help='whether the weights of the model should be loaded (default: False)')
+    parser.add_argument('--n_iters', type=int, default=10, help='the number of iterations to perform in random search (default: 10)')
     parser.add_argument('--verbose', type=bool, default=False, help='whether the algorithm should be verbose (default: False)')
     parser.add_argument('--seed', type=int, default=0, help='the random seed (default: 0)')
 
@@ -161,45 +141,29 @@ if __name__ == '__main__':
     dataset = Dataset.load_from_df(df[['row', 'col', 'Prediction']], reader)
 
     # Select algo class
-    algo_class = source.algo_classes[args.algo_name]
+    algo_class = source.algo_classes[args.algo_class]
 
-    # Select model (if any)
-    if args.model_num > 0:
-        model = source.instances[args.algo_name][args.model_num]
-    else:
-        model = None
+    # Select model instance
+    model = source.instances[args.algo_class][args.model_num]
 
-    # Set verbosity of model (if selected)
-    if model is not None:
+    # Set verbosity of model
+    if args.verbose:
         model.verbose = args.verbose
 
-    # Weights path
-    weights_file_path = ''
-
-    # Check for weights saving/loading
-    if args.computation == 'save' or args.load:
-        # Sets the file path
-        weights_file_path = source.WEIGHTS_DIR + args.algo_name.lower() + '-' + str(args.model_num) + '/'
-        # Create directory
-        utils.create_dir(weights_file_path)
-
     # Perform requested computation
-    if args.computation == 'cv':
+    if args.exec_mode == 'cv':
         cv(model, dataset)
-    elif args.computation == 'target_cv':
+    elif args.exec_mode == 'target_cv':
         target_cv(model, dataset)
-    elif args.computation == 'kfold':
+    elif args.exec_mode == 'kfold':
         kfold(model, dataset, k=args.k)
-    elif args.computation == 'grid':
+    elif args.exec_mode == 'grid':
         grid(algo_class, dataset, k=args.k)
-    elif args.computation == 'random_search':
+    elif args.exec_mode == 'random_search':
         random_search(algo_class, dataset, k=args.k, n_iters=args.n_iters)
-    elif args.computation == 'dump':
-        file_name = source.NEW_PREDICTIONS_DIR + args.algo_name.lower() + '-' + str(args.model_num) + '.csv'
+    elif args.exec_mode == 'dump':
+        file_name = source.NEW_PREDICTIONS_DIR + args.algo_class.lower() + '-' + str(args.model_num) + '.csv'
         training_set = dataset.build_full_trainset()
         dump(model, training_set, indexes, file_name, weights_file_path)
-    elif args.computation == 'save':
-        training_set = dataset.build_full_trainset()
-        save(model, training_set, weights_file_path)
     else:
         print('Invalid computation selected.')
