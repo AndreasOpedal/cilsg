@@ -45,7 +45,7 @@ instances['pLSA'] = {}
 instances['Mean'][1] = Mean()
 instances['SVD'][1] = SVD()
 instances['ALS'][1] = ALS()
-instances['SGDPP2'][1] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, conf=None)
+instances['SGDPP2'][1] = SGDPP2(n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50)
 instances['SVDthr'][1] = SVDthr()
 instances['pLSA'][1] = pLSA()
 

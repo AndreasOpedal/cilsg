@@ -74,21 +74,18 @@ class SVD(AlgoBase):
     Implementation of SVD.
     '''
 
-    def __init__(self, n_factors=160, impute_strategy=None, eps=1e-3):
+    def __init__(self, n_factors=160, impute_strategy=None):
         '''
         Initializes the class with the given parameters.
 
         Parameters:
         n_factors (int): the number of latent features. By default 160
-        impute_strategy (object): the strategy to use to impute the non-rated items. The options are None (0), 'ones', 'neg_ones',
-                                  'mean', 'median', 'neg_eps' a small negative value, and 'pos_eps'a small positive value.
+        impute_strategy (object): the strategy to use to impute the non-rated items. The options are None (0), 'mean', 'median'.
                                   By default None
-        eps (float): the epsilon used for imputing (if selected). By default 1e-3
         '''
 
         self.n_factors = n_factors
         self.impute_strategy = impute_strategy
-        self.eps = eps
 
         self.trainset = None
         self.U = None
@@ -125,19 +122,11 @@ class SVD(AlgoBase):
             X[u,i] = r
 
         # Impute empty ratings (if instructed)
-        if self.impute_strategy == 'ones':
-            X[X<1] = 1
-        elif self.impute_strategy == 'neg_ones':
-            X[X<1] = -1
-        elif self.impute_strategy == 'mean':
+        if self.impute_strategy == 'mean':
             X[X<1] = self.trainset.global_mean
         elif self.impute_strategy == 'median':
             median = np.median(X)
             X[X<1] = median
-        elif self.impute_strategy == 'neg_eps':
-            X[X<1] = -self.eps
-        elif self.impute_strategy == 'pos_eps':
-            X[X<1] = self.eps
 
         # Compute the SVD of X
         U, S, Vt = np.linalg.svd(X)
@@ -166,7 +155,7 @@ class SVD(AlgoBase):
         i (int): the item index
 
         Retuns:
-        rui (float): the prediction
+        est (float): the rating estimate
         '''
 
         known_user = self.trainset.knows_user(u)
@@ -174,30 +163,20 @@ class SVD(AlgoBase):
 
         if known_user and known_item:
             # Compute prediction
-            rui = np.dot(self.U[u,:], self.V[i,:])
+            est = np.dot(self.U[u,:], self.V[i,:])
             # Clip result
-            if rui < self.low:
-                rui = self.low
-            if rui > self.high:
-                rui = self.high
-            if self.conf is not None:
-                # Intify prediction
-                delta = 1-(rui%1)
-                if 0.5-delta >= self.conf:
-                    rui = math.ceil(rui)
-                elif delta-0.5 >= self.conf:
-                    rui = math.floor(rui)
+            est = np.clip(est, self.low, self.high)
         else:
             raise PredictionImpossible('User and item are unknown.')
 
-        return rui
+        return est
 
 class ALS(AlgoBase):
     '''
     Implementation of ALS.
     '''
 
-    def __init__(self, n_factors=160, n_epochs=5, init_mean=0, init_std=0.1, reg=1, low=1, high=5, conf=None, verbose=False):
+    def __init__(self, n_factors=160, n_epochs=5, init_mean=0, init_std=0.1, reg=1, low=1, high=5, verbose=False):
         '''
         Initializes the class with the given parameters.
 
@@ -209,7 +188,6 @@ class ALS(AlgoBase):
         reg (float): the regularization strength. By default 1
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
-        conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
         verbose (bool): whether the algorithm should be verbose. By default False
         '''
 
@@ -220,7 +198,6 @@ class ALS(AlgoBase):
         self.reg = reg
         self.low = low
         self.high = high
-        self.conf = conf
         self.verbose = verbose
 
         self.trainset = None
@@ -252,42 +229,35 @@ class ALS(AlgoBase):
         H(P,Q) = (r[u,i] - p[u]*q[i])^2 + (reg_pu*||p[u]||^2 + reg_qi*||q[i]||^2)
         '''
 
-        # Initialize P, Q
-        self.P = np.random.normal(self.init_mean, self.init_std, (self.trainset.n_users,self.n_factors))
-        self.Q = np.random.normal(self.init_mean, self.init_std, (self.trainset.n_items,self.n_factors))
+        # Set up rating matrix
+        A = np.zeros((self.trainset.n_users,self.trainset.n_items))
 
-        # Initialize identity
-        identity = np.identity(self.n_factors)
+        # Fill rating matrix
+        for u, i, r in self.trainset.all_ratings():
+            A[u,i] = r
+
+        # Initialize P, Q
+        P = np.random.normal(self.init_mean, self.init_std, (self.n_factors,self.trainset.n_users))
+        Q = np.random.normal(self.init_mean, self.init_std, (self.n_factors,self.trainset.n_items))
+
+        # Identity of size k
+        Id_k = np.identity(self.n_factors)
 
         # Optimize
         for current_epoch in range(self.n_epochs):
             if self.verbose:
                 print('Processing epoch {}'.format(current_epoch+1))
-            P_old = self.P.copy()
             for u in range(self.trainset.n_users):
-                temp_pq = np.zeros((self.n_factors,self.n_factors))
-                temp_r = np.zeros(self.n_factors)
-                for i, r in self.trainset.ur[u]:
-                    temp_pq += np.dot(self.Q[i,:], self.Q[i,:].T) + self.reg*identity
-                    temp_r += r*self.Q[i,:]
-                try:
-                    self.P[u,:] = np.dot(np.linalg.inv(temp_pq), temp_r)
-                except np.linalg.LinAlgError as err:
-                    if 'Singular matrix' in str(err):
-                        print('Singular matrix (P): skipping iteration')
-                        break
+                obs_items = np.nonzero(A[u,:])
+                sum_qqT = np.sum([Q[:, i]*np.reshape(Q[:, i], (-1, 1)) for i in obs_items[0]], 0)
+                P[:, u] = np.squeeze(np.linalg.inv(sum_qqT+self.reg*Id_k) @ np.reshape(np.sum([A[u,item]*Q[:, item] for item in obs_items[0]], 0), (-1, 1)))
             for i in range(self.trainset.n_items):
-                temp_pq = np.zeros((self.n_factors,self.n_factors))
-                temp_r = np.zeros(self.n_factors)
-                for u, r in self.trainset.ir[i]:
-                    temp_pq += np.dot(P_old[u,:], P_old[u,:].T) + self.reg*identity
-                    temp_r += r*P_old[u,:]
-                try:
-                    self.Q[i,:] = np.dot(np.linalg.inv(temp_pq), temp_r)
-                except np.linalg.LinAlgError as err:
-                    if 'Singular matrix' in str(err):
-                        print('Singular matrix (Q): skipping iteration')
-                        break
+                obs_users = np.nonzero(A[:, i])
+                sum_ppT = np.sum([P[:, u]*np.reshape(P[:, u], (-1, 1)) for u in obs_users[0]], 0)
+                Q[:, i] = np.squeeze(np.linalg.inv(sum_ppT+self.reg*Id_k) @ np.reshape(np.sum([A[u, i]*P[:, u] for u in obs_users[0]], 0), (-1, 1)))
+
+        # Write parameters
+        self.P, self.Q = P, Q
 
     def estimate(self, u, i):
         '''
@@ -298,28 +268,18 @@ class ALS(AlgoBase):
         i (int): the item index
 
         Retuns:
-        rui (float): the prediction
+        est (float): the rating estimate
         '''
 
         known_user = self.trainset.knows_user(u)
         known_item = self.trainset.knows_item(i)
 
         if known_user and known_item:
-            # Compute prediction
-            rui = np.dot(self.P[u,:], self.Q[i,:])
+            # Compute estimate
+            est = np.dot(self.P[:,u], self.Q[:,i])
             # Clip result
-            if rui < self.low:
-                rui = self.low
-            if rui > self.high:
-                rui = self.high
-            if self.conf is not None:
-                # Intify prediction
-                delta = 1-(rui%1)
-                if 0.5-delta >= self.conf:
-                    rui = math.ceil(rui)
-                elif delta-0.5 >= self.conf:
-                    rui = math.floor(rui)
+            est = np.clip(est, self.low, self.high)
         else:
             raise PredictionImpossible('User and item are unknown.')
 
-        return rui
+        return est

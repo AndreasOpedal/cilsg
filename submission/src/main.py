@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import utils
 import source
-from model_selection import targeting_rmse
 from surprise import Reader, Dataset, accuracy
 from surprise.model_selection import train_test_split, cross_validate
 from surprise.model_selection.search import RandomizedSearchCV, GridSearchCV
@@ -26,22 +25,6 @@ def cv(model, data):
     predictions = model.test(testset)
     # Error
     error = accuracy.rmse(predictions)
-
-def target_cv(model, data):
-    '''
-    Performs cross-validation on the ratings, i.e. computes the RMSE for each rating {1,2,3,4,5}.
-    The model in trained on 75% of the provided data.
-
-    Parameters:
-    model (surprise.AlgoBase): the model to test
-    data (surprise.Dataset): the data to use
-    '''
-    # Create data split
-    trainset, testset = train_test_split(data, test_size=0.25)
-    # Fit model
-    model.fit(trainset)
-    # Target RMSEs
-    targeting_rmse(model, testset)
 
 def kfold(model, data, k=10):
     '''
@@ -117,7 +100,7 @@ def dump(model, data, indexes, file_name, load_dir):
 if __name__ == '__main__':
     # Argparser parameters
     parser = argparse.ArgumentParser(description='Collaborative Filtering')
-    parser.add_argument('exec_mode', type=str, metavar='execution mode', help='the execution mode (options: cv, target_cv, kfold, grid, random_search, dump, save)')
+    parser.add_argument('exec_mode', type=str, metavar='execution mode', help='the execution mode (options: cv, kfold, grid, random_search, dump, save)')
     parser.add_argument('algo_class', type=str, metavar='algorithm class', help='the algorithm class to use (see names of classes in factorization.pyx and baseline.py)')
     parser.add_argument('--model_num', type=int, default=1, help='the number of the model (instance of an algo_class) to use (default: 1)')
     parser.add_argument('--k', type=int, default=10, help='the k for kfold cross-validation (default: 10)')
@@ -153,8 +136,6 @@ if __name__ == '__main__':
     # Perform requested computation
     if args.exec_mode == 'cv':
         cv(model, dataset)
-    elif args.exec_mode == 'target_cv':
-        target_cv(model, dataset)
     elif args.exec_mode == 'kfold':
         kfold(model, dataset, k=args.k)
     elif args.exec_mode == 'grid':

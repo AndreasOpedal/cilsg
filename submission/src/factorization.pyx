@@ -13,7 +13,6 @@ All algorithms follow the same structure as Simon Funk's SVD. The implemented al
 
 cimport numpy as np
 import numpy as np
-import math
 from surprise import AlgoBase, PredictionImpossible
 from baseline import SVD
 
@@ -23,7 +22,7 @@ class SGDPP2(AlgoBase):
     In the optimization, both learning rate (linear) decay and gradient momentum are used.
     '''
 
-    def __init__(self, n_factors=100, n_epochs=20, init_mean=0, init_std=0.1, lr_pu=0.01, lr_qi=0.01, alpha_pu=0.01, alpha_qi=0.01, decay_pu=0.1, decay_qi=0.1, reg_pu=0.5, reg_qi=0.5, lambda_bu=1, lambda_bi=1, lambda_yj=1, impute_strategy=None, low=1, high=5, conf=None, verbose=False):
+    def __init__(self, n_factors=100, n_epochs=20, init_mean=0, init_std=0.1, lr_pu=0.01, lr_qi=0.01, alpha_pu=0.01, alpha_qi=0.01, decay_pu=0.1, decay_qi=0.1, reg_pu=0.5, reg_qi=0.5, lambda_bu=1, lambda_bi=1, lambda_yj=1, impute_strategy=None, low=1, high=5, verbose=False):
         '''
         Initializes the class with the given parameters.
 
@@ -48,7 +47,6 @@ class SGDPP2(AlgoBase):
                                   By default None
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
-        conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
         verbose (bool): whether the algorithm should be verbose. By default False
         '''
 
@@ -72,7 +70,6 @@ class SGDPP2(AlgoBase):
         self.impute_strategy = impute_strategy
         self.low = low
         self.high = high
-        self.conf = conf
         self.verbose = verbose
 
         self.trainset = None
@@ -221,28 +218,18 @@ class SGDPP2(AlgoBase):
         i (int): the item index
 
         Returns:
-        rui (float): the prediction
+        est (float): the rating estimate
         '''
 
         known_user = self.trainset.knows_user(u)
         known_item = self.trainset.knows_item(i)
 
         if known_user and known_item:
-            # Compute prediction
-            rui = np.dot(self.Q[i,:], self.P[u,:] + self.u_impl_fdb[u,:]) + self.bias_u[u] + self.bias_i[i] + self.mu
+            # Compute estimate
+            est = np.dot(self.Q[i,:], self.P[u,:] + self.u_impl_fdb[u,:]) + self.bias_u[u] + self.bias_i[i] + self.mu
             # Clip result
-            if rui < self.low:
-                rui = self.low
-            if rui > self.high:
-                rui = self.high
-            if self.conf is not None:
-                # Intify prediction
-                delta = 1-(rui%1)
-                if 0.5-delta >= self.conf:
-                    rui = math.ceil(rui)
-                elif delta-0.5 >= self.conf:
-                    rui = math.floor(rui)
+            est = np.clip(est, self.low, self.high)
         else:
             raise PredictionImpossible('User and item are unknown.')
 
-        return rui
+        return est

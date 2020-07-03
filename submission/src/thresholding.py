@@ -9,7 +9,7 @@ class SVDthr(AlgoBase):
     Implementation of SVD thresholding.
     '''
 
-    def __init__(self, tao=10000, eps=0.1, step_size=1, low=1, high=5, conf=None, verbose=False):
+    def __init__(self, tao=10000, eps=0.1, step_size=1, low=1, high=5, verbose=False):
         '''
         Initializes the class with the given parameters.
 
@@ -30,7 +30,6 @@ class SVDthr(AlgoBase):
         self.step_size = step_size
         self.low = low
         self.high = high
-        self.conf = conf
         self.verbose = verbose
 
         self.trainset = None
@@ -126,28 +125,18 @@ class SVDthr(AlgoBase):
         i (int): the item index
 
         Returns:
-        rui (float): the prediction
+        est (float): the rating estimate
         '''
 
         known_user = self.trainset.knows_user(u)
         known_item = self.trainset.knows_item(i)
 
         if known_user and known_item:
-            # Compute prediction
-            rui = self.pred_matrix[u,i]
+            # Compute estimate
+            est = self.pred_matrix[u,i]
             # Clip result
-            if rui < self.low:
-                rui = self.low
-            if rui > self.high:
-                rui = self.high
-            if self.conf is not None:
-                # Intify prediction
-                delta = 1-(rui%1)
-                if 0.5-delta >= self.conf:
-                    rui = math.ceil(rui)
-                elif delta-0.5 >= self.conf:
-                    rui = math.floor(rui)
+            est = np.clip(est, self.low, self.high)
         else:
             raise PredictionImpossible('User and item are unknown.')
 
-        return rui
+        return est

@@ -1,4 +1,6 @@
-# Unstable Geniuses
+# Collaborative Filtering - Unstable Geniuses
+
+We explain how to the submission directory is organized, how to run the algorithms (and in which modes), and the role of notebooks.
 
 ## Table of Contents
 
@@ -13,7 +15,6 @@
 ## Directory structure
 
 This submission directory is structured as follows: the `data/` directory contains the training data and the missing entries for the submission. The `src/` data contains the implementation of most algorithms (apart from the autoencoder). Last, the `notebook/` directory contains notebooks for each algorithm.
-Notebooks are meant to be an aid the understanding on how each algorithm works, while the files in the `src/` are meant to be used for quick execution.
 
 ## Requirements
 
@@ -28,7 +29,7 @@ The following packages are needed (Python 3.8.0):
 
 ## Setup
 
-Some algorithms (`.pyx`) are implemented using Cython. In order to run these algorithms, execute the following command:
+Some algorithms (`.pyx` extension) are implemented using Cython. In order to run these algorithms, execute the following command:
 
 ```
 cd src/
@@ -39,12 +40,12 @@ python3 setup.py build_ext --inplace
 
 We implemented the following algorithms:
 
-+ *Mean* (baseline.py): this simple algorithm predicts the global sample mean for each missing entry
-+ *SVD* (baseline.py): compute the SVD of the training matrix. The training matrix can be imputed with the sample mean, sample median, or with 0s
-+ *ALS* (baseline.py)
-+ *SGDPP2* (factorization.pyx): an variation of the SVD++ algorithm
-+ *pLSA* (plsa.pyx)
-+ *SVDthr* (thresholding.py): an implementation of SVD thresholding
++ *Mean* (src/baseline.py): this simple algorithm predicts the global sample mean for each missing entry
++ *SVD* (src/baseline.py): compute the SVD of the training matrix. The training matrix can be imputed with the sample mean, sample median, or with 0s
++ *ALS* (src/baseline.py)
++ *SGDPP2* (src/factorization.pyx): an variation of the SVD++ algorithm
++ *pLSA* (src/plsa.pyx)
++ *SVDthr* (src/thresholding.py): an implementation of SVD thresholding
 + *VAE* (??)
 + *Ensemble* (??)
 
@@ -60,7 +61,6 @@ instances['SVD'][2] = SVD(n_factors=2)
 Algorithms can be executed in the following modes:
 
 + *cv*: performs cross-validation on the selected algorithm instance and computes the validation RMSE on a 0.25 split
-+ *target_cv*: similar to *cv*, but the RMSE is computed for each rating (i.e. the RMSE for validation ratings equal to 1, 2, 3, 4, 5). This version can be used to check whether the algorithm is properly balanced
 + *kfold*: performs k-fold cross-validation on the selected algorithm instance. The user can decide on the number of folds (10 by default)
 + *grid*: performs grid search on the selected algorithm class using the parameter grid in the `src/source.py` file
 + *random_search*: performs random search on the selected algorithm class using the parameter distribution grid in the `src/source.py` file
@@ -85,4 +85,5 @@ The following options are available:
 
 ## Notebooks
 
-Notebooks are meant to give the user a better understanding of the code implemented in `src/`. Their goal is to provide the mathematical background, clarify the code, and creating plots to better illustrate how the algorithm learns the weights. 
+Notebooks are meant to give the user a better understanding of the code implemented in `src/`. Their goal is to provide the mathematical background, clarify the code, and creating plots to better illustrate how the algorithm learns the weights.
+Notebooks are not meant however to train the full model or to perform cross-validation, as it would be quite time-consuming. The exception to this rule is the notebook for the autoencoder.

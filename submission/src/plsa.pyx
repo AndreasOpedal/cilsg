@@ -1,7 +1,6 @@
 cimport numpy as np
 import numpy as np
 import pandas as pd
-import math
 from surprise import Reader, Dataset
 from surprise import AlgoBase, PredictionImpossible
 
@@ -10,7 +9,7 @@ class pLSA(AlgoBase):
     Implementation of the pLSA algorithm.
     '''
 
-    def __init__(self, n_latent=5, n_epochs=5, to_normalize=False, alpha=5, low=1, high=5, conf=None, verbose=False):
+    def __init__(self, n_latent=5, n_epochs=5, to_normalize=False, alpha=5, low=1, high=5, verbose=False):
         '''
         Initializes the class with the given parameters.
 
@@ -21,7 +20,6 @@ class pLSA(AlgoBase):
         alpha (float): smooth factor to calculate user's mean and variance. Only used if "normalized" is True. By default 5
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
-        conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
         verbose (bool): whether the algorithm should be verbose. By default False
         '''
 
@@ -33,7 +31,6 @@ class pLSA(AlgoBase):
         self.alpha = alpha
         self.low = low
         self.high = high
-        self.conf = conf
         self.verbose = verbose
 
         self.trainset = None
@@ -193,28 +190,18 @@ class pLSA(AlgoBase):
         i (int): the item index
 
         Returns:
-        rui (float): the prediction
+        est (float): the rating estimate
         '''
 
         known_user = self.trainset.knows_user(u)
         known_item = self.trainset.knows_item(i)
 
         if known_user and known_item:
-            # Compute prediction
-            rui = self.pred_matrix[u,i]
+            # Compute estimate
+            est = self.pred_matrix[u,i]
             # Clip result
-            if rui < self.low:
-                rui = self.low
-            if rui > self.high:
-                rui = self.high
-            if self.conf is not None:
-                # Intify prediction
-                delta = 1-(rui%1)
-                if 0.5-delta >= self.conf:
-                    rui = math.ceil(rui)
-                elif delta-0.5 >= self.conf:
-                    rui = math.floor(rui)
+            est = np.clip(est, self.low, self.high)
         else:
             raise PredictionImpossible('User and item are unknown.')
 
-        return rui
+        return est
