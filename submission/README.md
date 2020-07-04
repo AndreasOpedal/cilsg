@@ -14,7 +14,7 @@ We explain how to the submission directory is organized, how to run the algorith
 
 ## Directory structure
 
-This submission directory is structured as follows: the `data/` directory contains the training data and the missing entries for the submission. The `src/` data contains the implementation of most algorithms (apart from the autoencoder). Last, the `notebook/` directory contains notebooks for each algorithm.
+This submission directory is structured as follows: the `data/` directory contains the training data and the missing entries for the submission. The `src/` data contains the implementation of most algorithms (apart from the auto-encoder). Last, the `notebook/` directory contains notebooks for each algorithm.
 
 ## Requirements
 
@@ -29,7 +29,7 @@ The following packages are needed (Python 3.8.0):
 
 ## Setup
 
-Some algorithms (`.pyx` extension) are implemented using Cython. In order to run these algorithms, execute the following command:
+Some algorithms (`.pyx` extension) are implemented using Cython to speed-up the computations. In order to run these algorithms, first execute the following commands:
 
 ```
 cd src/
@@ -42,19 +42,15 @@ We implemented the following algorithms:
 
 + *Mean* (src/baseline.py): this simple algorithm predicts the global sample mean for each missing entry
 + *SVD* (src/baseline.py): compute the SVD of the training matrix. The training matrix can be imputed with the sample mean, sample median, or with 0s
-+ *ALS* (src/baseline.py)
++ *ALS* (src/baseline.py): an implementation of alternating least squares
 + *SGDPP2* (src/factorization.pyx): an variation of the SVD++ algorithm
 + *pLSA* (src/plsa.pyx)
 + *SVDthr* (src/thresholding.py): an implementation of SVD thresholding
-+ *VAE* (??)
-+ *Ensemble* (??)
++ *VAE* (??): an implementation of a variational auto-encoder
++ *Ensemble* (??): an ensemble method where the result of different algorithms is averaged
 
 We organize these algorithms (with the exception of *VAE* and *Ensemble*) in the `src/source.py` file. Two dictionaries are used to organize algorithm classes and instances. The `algo_classes` dictionary maps algorithms' names to algorithms Python classes, e.g. `algo_classes['Mean'] = Mean`. The `instances` dictionary maps algorithms' names to a dictionary of that algorithm's instances. Instances are mapped by a unique number. For example, the default version of the *Mean* algorithm is mapped as `instances['Mean'][1] = Mean()`.
-How to add a new instance of an algorithm? Say that we want to run *SVD* with a different number of factors: then we add to the file the following line
-
-```
-instances['SVD'][2] = SVD(n_factors=2)
-```
+How to add a new instance of an algorithm? Say that we want to run *SVD* with a different number of factors: then we add to the file the line `instances['SVD'][2] = SVD(n_factors=2)`.
 
 ## Modes
 
@@ -68,16 +64,17 @@ Algorithms can be executed in the following modes:
 
 ## Execution
 
-To execute an algorithm with a given mode, run the following command:
+To execute an algorithm with a given mode, run the following commands:
 
 ```
-python3 src/main.py mode algorithm
+cd src/
+python3 main.py mode algorithm
 ```
 
 The following options are available:
 
 + -h: help message
-+ --model_num (int): the number of the algorithm instance. By default 1
++ --model_num (int): the number of the algorithm instance. By default 1 (corresponding to our best model configurations)
 + --k (int): the number of folds for the k-fold cross-validation. By default 10
 + --n_iters (int): the number of iterations for the randomized search. By default 10
 + --verbose (bool): whether the algorithm should be verbose. By default False
@@ -86,4 +83,4 @@ The following options are available:
 ## Notebooks
 
 Notebooks are meant to give the user a better understanding of the code implemented in `src/`. Their goal is to provide the mathematical background, clarify the code, and creating plots to better illustrate how the algorithm learns the weights.
-Notebooks are not meant however to train the full model or to perform cross-validation, as it would be quite time-consuming. The exception to this rule is the notebook for the autoencoder.
+Notebooks are not meant however to train the full model or to perform cross-validation, as it would be quite time-consuming. The exception to this rule is the notebook for the auto-encoder.
