@@ -22,28 +22,27 @@ class SGDPP2(AlgoBase):
     In the optimization, both learning rate (linear) decay and gradient momentum are used.
     '''
 
-    def __init__(self, n_factors=100, n_epochs=20, init_mean=0, init_std=0.1, lr_pu=0.01, lr_qi=0.01, alpha_pu=0.01, alpha_qi=0.01, decay_pu=0.1, decay_qi=0.1, reg_pu=0.5, reg_qi=0.5, lambda_bu=1, lambda_bi=1, lambda_yj=1, impute_strategy=None, low=1, high=5, verbose=False):
+    def __init__(self, n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, impute_strategy=None, low=1, high=5, verbose=False):
         '''
         Initializes the class with the given parameters.
 
         Parameters:
-        n_factors (int): the number of latent features. By default 100
-        n_epochs (int): the number of iterations. By default 20
-        init_mean (float): initialization mean. By default 0
-        init_std (float): initialization standard deviation. By default 0.1
-        lr_pu (float): the learning rate for P. By default 0.01
-        lr_qi (float): the learning rate for P. By default 0.01
-        alpha_pu (float): the strength of the gradient momentum of P. By default 0.01
-        alpha_qi (float): the strength of the gradient momentum of Q. By default 0.01
-        decay_pu (float): the decay associated with lr_pu. By default 0.1
-        decay_qi (float): the decay associated with lr_pu. By default 0.1
-        reg_pu (float): the regularization strength for P. By default 0.5
-        reg_qi (float): the regularization strength for Q. By default 0.5
-        lambda_bu (float): the regularizer for the initialization of b[u]. By default 1
-        lambda_bi (float): the regularizer for the initialization of b[i]. By default 1
-        lambda_yj (float): the regularizer for the initialization of the item factors. By default 1
-        impute_strategy (object): the strategy to use to impute the non-rated items. The options are None (0), 'ones', 'neg_ones',
-                                  'mean', 'median', 'neg_eps' a small negative value, and 'pos_eps'a small positive value.
+        n_factors (int): the number of latent features. By default 192
+        n_epochs (int): the number of iterations. By default 85
+        init_mean (float): initialization mean. By default 0.2
+        init_std (float): initialization standard deviation. By default 0.005
+        lr_pu (float): the learning rate for P. By default 0.005
+        lr_qi (float): the learning rate for P. By default 0.005
+        alpha_pu (float): the strength of the gradient momentum of P. By default 0.3
+        alpha_qi (float): the strength of the gradient momentum of Q. By default 0.3
+        decay_pu (float): the decay associated with lr_pu. By default 0.02
+        decay_qi (float): the decay associated with lr_pu. By default 0.05
+        reg_pu (float): the regularization strength for P. By default 0.06
+        reg_qi (float): the regularization strength for Q. By default 0.065
+        lambda_bu (float): the regularizer for the initialization of b[u]. By default 25
+        lambda_bi (float): the regularizer for the initialization of b[i]. By default 0.5
+        lambda_yj (float): the regularizer for the initialization of the item factors. By default 50
+        impute_strategy (object): the strategy to use to impute the non-rated items. The options are None (0), 'mean', 'median'.
                                   By default None
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
