@@ -1,16 +1,17 @@
 # To add a new cell, type '# %%'
 # To add a new markdown cell, type '# %% [markdown]'
 # %%
-from IPython import get_ipython
+# from IPython import get_ipython
 
 # %%
 import numpy as np
 import pandas as pd
-get_ipython().system('pip install --user scikit-surprise')
+#get_ipython().system('pip install --user scikit-surprise')
 from surprise import AlgoBase, PredictionImpossible, Reader, Dataset, accuracy
 from surprise.model_selection import train_test_split, cross_validate, GridSearchCV
 
 import pickle
+import time
 
 # %%
 data_train_raw = pd.read_csv('../submission/data/data-train.csv')
@@ -86,25 +87,26 @@ def als(trainset, k, lamb, tol, max_iter):
     return P, Q
 
 class ALS(AlgoBase):
-    def __init__(self,k = 10, lamb = 0.1, tol  = 0.001):
+    def __init__(self,k, lamb, tol, max_iter):
         self.k = k
         self.lamb = lamb
         self.tol = tol
-        self.max_iter = 50
+        self.max_iter = max_iter
     def fit(self, trainset):
         AlgoBase.fit(self, trainset)
-
+        start = time.time()
         self.P, self.Q = als(self.trainset, self.k, self.lamb, self.tol, self.max_iter)
-                
+        print("Used time: {}".format(time.time()-start))        
     def estimate(self, u, i):
         return np.clip(np.dot(self.P[:, u], self.Q[:, i]), 1, 5)
 
 
 # %%
-model = GridSearchCV(ALS, param_grid = {"k":[5, 10, 20, 35, 55, 80], "lamb":[0.1, 0.3, 0.5, 0.7], "tol":[0.25, 0.1, 0.05]})
+
+model = GridSearchCV(ALS, param_grid = {"k":[3, 5, 8], "lamb":[0.75, 0.9, 0.95], "tol":[0.5, 0.75], "max_iter":[20, 30,50,100]}, n_jobs = -1)
 
 model.fit(dataset)
-
-with open("./als.pkl") as f:
+from datetime import datetime
+with open("./als_k30_lamb3_{}.pkl".format(datetime.now().strftime('%Y%m%d_%H%M')), "wb") as f:
     pickle.dump([model.best_score, model.best_params], f)
 
