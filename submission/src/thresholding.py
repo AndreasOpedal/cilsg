@@ -9,14 +9,14 @@ class SVDthr(AlgoBase):
     Implementation of SVD thresholding.
     '''
 
-    def __init__(self, tao=10000, eps=0.1, step_size=1, low=1, high=5, verbose=False):
+    def __init__(self, tao=10000, step_size=1.99, eps=0.2, low=1, high=5, verbose=False):
         '''
         Initializes the class with the given parameters.
 
         Parameters:
         tao (float): by how much should singular values be reduced. By default 10000
-        eps (float): the tolerance on the training error. By default 0.1
-        step_size (float): the step size to apply in the projection. By default 1
+        step_size (float): the step size to apply in the projection. By default 1.99
+        eps (float): the tolerance on the training error. By default 0.2
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         conf (float, [0,0.5]): the confidence interval for modifying the prediction. By default None
@@ -26,8 +26,8 @@ class SVDthr(AlgoBase):
         AlgoBase.__init__(self)
 
         self.tao = tao
-        self.eps = eps
         self.step_size = step_size
+        self.eps = eps
         self.low = low
         self.high = high
         self.verbose = verbose
