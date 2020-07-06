@@ -44,10 +44,10 @@ We implemented the following algorithms:
 + *SVD* (src/baseline.py): compute the SVD of the training matrix. The training matrix can be imputed with the sample mean, sample median, or with 0s
 + *ALS* (src/baseline.py): an implementation of alternating least squares
 + *SVDPP2* (src/factorization.pyx): an variation of the SVD++ algorithm
-+ *pLSA* (src/plsa.pyx)
++ *pLSA* (src/plsa.pyx): an implementation of pLSA, which uses the EM-algorithm, where we add an additional SVD step to compute the final prediction
 + *SVDthr* (src/thresholding.py): an implementation of SVD thresholding
 + *VAE* (??): an implementation of a variational auto-encoder
-+ *Ensemble* (??): an ensemble method where the result of different algorithms is averaged
++ *Ensemble* (??): an ensemble method where the results of different algorithms are averaged
 
 We organize these algorithms (with the exception of *VAE* and *Ensemble*) in the `src/source.py` file. Two dictionaries are used to organize algorithm classes and instances. The `algo_classes` dictionary maps algorithms' names to algorithms Python classes, e.g. `algo_classes['Mean'] = Mean`. The `instances` dictionary maps algorithms' names to a dictionary of that algorithm's instances. Instances are mapped by a unique number. For example, the default version of the *Mean* algorithm is mapped as `instances['Mean'][1] = Mean()`.
 How to add a new instance of an algorithm? Say we want to run *SVD* with a different number of factors: then we add to the file the line `instances['SVD'][2] = SVD(n_factors=2)`.

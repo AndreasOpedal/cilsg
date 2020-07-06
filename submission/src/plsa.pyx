@@ -6,15 +6,17 @@ from surprise import AlgoBase, PredictionImpossible
 
 class pLSA(AlgoBase):
     '''
-    Implementation of the pLSA algorithm.
+    Implementation of the pLSA algorithm using the EM-algorithm. After that, SVD is used to get the final
+    prediction matrix
     '''
 
-    def __init__(self, n_latent=5, n_epochs=5, to_normalize=False, alpha=5, low=1, high=5, verbose=False):
+    def __init__(self, n_latent=20, n_eig=8, n_epochs=5, to_normalize=True, alpha=5, low=1, high=5, verbose=False):
         '''
         Initializes the class with the given parameters.
 
         Parameters:
         n_latent (int): the number of latent states. By default 5
+        n_eig (int): the number of eigenvalues to use in the SVD. By default 8.
         n_epochs (int): the number of iterations. By default 5
         normalized (bool): whether to normalize observed rating matrix. By default False
         alpha (float): smooth factor to calculate user's mean and variance. Only used if "normalized" is True. By default 5
@@ -26,6 +28,7 @@ class pLSA(AlgoBase):
         AlgoBase.__init__(self)
 
         self.n_latent = n_latent
+        self.n_eig = n_eig
         self.n_epochs = n_epochs
         self.to_normalize = to_normalize
         self.alpha = alpha
@@ -123,9 +126,32 @@ class pLSA(AlgoBase):
         # Call EM algorithm
         self.em()
 
+    def svd(self):
+        '''
+        Performs SVD with the training matrix imputed using the values from the matrix computed from the EM-algorithm.
+        '''
+
+        # Matrix holding the observed ratings
+        A = np.zeros((self.trainset.n_users,self.trainset.n_items))
+
+        # Fill the ratings
+        for u, i, r in self.trainset.all_ratings():
+            A[u,i] = r
+
+        # Get non-zero indeces
+        non_zeros_indeces = np.nonzero(A)
+
+        # Impute using (computed) prediction matrix
+        A[non_zeros_indeces] = self.pred_matrix[non_zeros_indeces]
+
+        # Compute SVD
+        U, s, Vh = np.linalg.svd(A)
+        s = s[:self.n_eig]
+        self.pred_matrix = U[:, :s.shape[0]]@np.diag(s)@Vh[:s.shape[0], :]
+
     def em(self):
         '''
-        Gaussian probabilistic latent semantic analysis via EM method.
+        Gaussian probabilistic latent semantic analysis via EM-algorithm.
         '''
 
         # Cython initialization
@@ -180,6 +206,9 @@ class pLSA(AlgoBase):
         self.pred_matrix = np.nan_to_num(self.p_z)@np.nan_to_num(self.mu_iz.T)
         if self.to_normalize:
             self.pred_matrix = np.add(np.multiply(self.pred_matrix, self.user_var[:,np.newaxis]), self.user_mu[:,np.newaxis])
+
+        # Apply SVD
+        self.svd()
 
     def estimate(self, u, i):
         '''
