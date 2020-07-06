@@ -43,7 +43,7 @@ We implemented the following algorithms:
 + `Mean` (src/baseline.py): this simple algorithm predicts the global sample mean for each missing entry
 + `SVD` (src/baseline.py): compute the SVD of the training matrix. The training matrix can be imputed with the sample mean, sample median, or with 0s
 + `ALS` (src/baseline.py): an implementation of alternating least squares
-+ `SVDPP2` (src/factorization.pyx): an variation of the SVD++ algorithm
++ `SVDPP2` (src/factorization.pyx): a variation of the SVD++ algorithm
 + `pLSA` (src/plsa.pyx): an implementation of pLSA, which uses the EM-algorithm, where we add an additional SVD step to compute the final prediction
 + `SVDthr` (src/thresholding.py): an implementation of SVD thresholding
 + `VAE` (??): an implementation of a variational auto-encoder
@@ -80,7 +80,7 @@ The following options are available:
 + --verbose (bool): whether the algorithm should be verbose. By default False
 + --seed (int): the random seed. By default 0
 
-**Note**: the only algorithm which cannot be run is `VAE` (please see notebook).
+**Note**: algorithm `VAE` and `Ensemble` can only be run via notebooks (see `notebooks/` directory).
 
 ## Notebooks
 
