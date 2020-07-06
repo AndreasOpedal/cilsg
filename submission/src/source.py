@@ -3,7 +3,7 @@ This file which contains constants, algorithm classes, model instances, and para
 '''
 
 from scipy import stats
-from factorization import SGDPP2
+from factorization import SVDPP2
 from baseline import Mean, SVD, ALS
 from thresholding import SVDthr
 from plsa import pLSA
@@ -24,7 +24,7 @@ algo_classes = {}
 algo_classes['Mean'] = Mean
 algo_classes['SVD'] = SVD
 algo_classes['ALS'] = ALS
-algo_classes['SGDPP2'] = SGDPP2
+algo_classes['SVDPP2'] = SVDPP2
 algo_classes['SVDthr'] = SVDthr
 algo_classes['pLSA'] = pLSA
 
@@ -34,10 +34,10 @@ algo_classes['pLSA'] = pLSA
 instances = {}
 
 # Initialize instances
-instances['SGDPP2'] = {}
 instances['Mean'] = {}
 instances['SVD'] = {}
 instances['ALS'] = {}
+instances['SVDPP2'] = {}
 instances['SVDthr'] = {}
 instances['pLSA'] = {}
 
@@ -45,7 +45,7 @@ instances['pLSA'] = {}
 instances['Mean'][1] = Mean()
 instances['SVD'][1] = SVD()
 instances['ALS'][1] = ALS()
-instances['SGDPP2'][1] = SGDPP2()
+instances['SVDPP2'][1] = SVDPP2()
 instances['SVDthr'][1] = SVDthr()
 instances['pLSA'][1] = pLSA()
 

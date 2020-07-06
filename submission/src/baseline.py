@@ -80,8 +80,8 @@ class SVD(AlgoBase):
 
         Parameters:
         n_factors (int): the number of latent features. By default 160
-        impute_strategy (object): the strategy to use to impute the non-rated items. The options are None (0), 'mean', 'median'.
-                                  By default None
+        impute_strategy (object): the strategy to use to impute the non-rated items. The options are 'zeros', 'mean', 'median'.
+                                  By default 'zeros'
         '''
 
         self.n_factors = n_factors

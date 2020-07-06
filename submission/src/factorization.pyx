@@ -8,7 +8,7 @@ The optimization is written in Cython, in order to speed up the costly computati
 This approach is similar to the one used in the Surprise package algorithms.
 
 All algorithms follow the same structure as Simon Funk's SVD. The implemented algorithms are:
-- SGDPP2, an implentation of Koren's SVD++ using heuristics, learning rate decay and gradient momentum
+- SVDPP2, an implentation of Koren's SVD++ using heuristics, learning rate decay and gradient momentum
 '''
 
 cimport numpy as np
@@ -16,7 +16,7 @@ import numpy as np
 from surprise import AlgoBase, PredictionImpossible
 from baseline import SVD
 
-class SGDPP2(AlgoBase):
+class SVDPP2(AlgoBase):
     '''
     Implementation of SVD++. In this algorithm, the biases and item factors are computed via heuristics.
     In the optimization, both learning rate (linear) decay and gradient momentum are used.
@@ -42,8 +42,8 @@ class SGDPP2(AlgoBase):
         lambda_bu (float): the regularizer for the initialization of b[u]. By default 25
         lambda_bi (float): the regularizer for the initialization of b[i]. By default 0.5
         lambda_yj (float): the regularizer for the initialization of the item factors. By default 50
-        impute_strategy (object): the strategy to use to impute the non-rated items. The options are None (0), 'mean', 'median'.
-                                  By default None
+        impute_strategy (object): the strategy to use to impute the non-rated items. The options are 'zeros', 'mean', 'median'.
+                                  By default 'zeros'
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         verbose (bool): whether the algorithm should be verbose. By default False
