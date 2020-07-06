@@ -40,27 +40,27 @@ python3 setup.py build_ext --inplace
 
 We implemented the following algorithms:
 
-+ *Mean* (src/baseline.py): this simple algorithm predicts the global sample mean for each missing entry
-+ *SVD* (src/baseline.py): compute the SVD of the training matrix. The training matrix can be imputed with the sample mean, sample median, or with 0s
-+ *ALS* (src/baseline.py): an implementation of alternating least squares
-+ *SVDPP2* (src/factorization.pyx): an variation of the SVD++ algorithm
-+ *pLSA* (src/plsa.pyx): an implementation of pLSA, which uses the EM-algorithm, where we add an additional SVD step to compute the final prediction
-+ *SVDthr* (src/thresholding.py): an implementation of SVD thresholding
-+ *VAE* (??): an implementation of a variational auto-encoder
-+ *Ensemble* (??): an ensemble method where the results of different algorithms are averaged
++ `Mean` (src/baseline.py): this simple algorithm predicts the global sample mean for each missing entry
++ `SVD` (src/baseline.py): compute the SVD of the training matrix. The training matrix can be imputed with the sample mean, sample median, or with 0s
++ `ALS` (src/baseline.py): an implementation of alternating least squares
++ `SVDPP2` (src/factorization.pyx): an variation of the SVD++ algorithm
++ `pLSA` (src/plsa.pyx): an implementation of pLSA, which uses the EM-algorithm, where we add an additional SVD step to compute the final prediction
++ `SVDthr` (src/thresholding.py): an implementation of SVD thresholding
++ `VAE` (??): an implementation of a variational auto-encoder
++ `Ensemble` (??): an ensemble method where the results of different algorithms are averaged
 
 We organize these algorithms (with the exception of *VAE* and *Ensemble*) in the `src/source.py` file. Two dictionaries are used to organize algorithm classes and instances. The `algo_classes` dictionary maps algorithms' names to algorithms Python classes, e.g. `algo_classes['Mean'] = Mean`. The `instances` dictionary maps algorithms' names to a dictionary of that algorithm's instances. Instances are mapped by a unique number. For example, the default version of the *Mean* algorithm is mapped as `instances['Mean'][1] = Mean()`.
 How to add a new instance of an algorithm? Say we want to run *SVD* with a different number of factors: then we add to the file the line `instances['SVD'][2] = SVD(n_factors=2)`.
 
 ## Modes
 
-Algorithms can be executed in the following modes:
+Each algorithm can be executed in a specific *mode*. The available modes are the following:
 
-+ *cv*: performs cross-validation on the selected algorithm instance and computes the validation RMSE on a 0.25 split
-+ *kfold*: performs k-fold cross-validation on the selected algorithm instance. The user can decide on the number of folds (10 by default)
-+ *grid*: performs grid search on the selected algorithm class using the parameter grid in the `src/source.py` file
-+ *random_search*: performs random search on the selected algorithm class using the parameter distribution grid in the `src/source.py` file
-+ *dump*: trains the selected algorithm instance on the whole dataset and writes the predictions in a `.csv` file
++ `cv`: performs cross-validation on the selected algorithm instance and computes the validation RMSE on a 0.25 split
++ `kfold`: performs k-fold cross-validation on the selected algorithm instance. The user can decide on the number of folds (10 by default)
++ `grid`: performs grid search on the selected algorithm class using the parameter grid in the `src/source.py` file
++ `random_search`: performs random search on the selected algorithm class using the parameter distribution grid in the `src/source.py` file
++ `dump`: trains the selected algorithm instance on the whole dataset and writes the predictions in a `.csv` file
 
 ## Execution
 
@@ -79,6 +79,8 @@ The following options are available:
 + --n_iters (int): the number of iterations for the randomized search. By default 10
 + --verbose (bool): whether the algorithm should be verbose. By default False
 + --seed (int): the random seed. By default 0
+
+**Note**: the only algorithm which cannot be run is `VAE` (please see notebook).
 
 ## Notebooks
 
