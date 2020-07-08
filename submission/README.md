@@ -13,8 +13,8 @@ We explain how to the submission directory is organized, how to run the algorith
     * [Adding a new algorithm](#adding-a-new-algorithm)
 5. [Modes](#modes)
 6. [Execution](#execution)
-    * [Example: reproducing the results](#example:-reproducing-the-results)
-    * [Example: performing crossvalidation](#example:-performing-crossvalidation)
+    * [Example: reproducing the results](#example-reproducing-the-results)
+    * [Example: performing crossvalidation](#example-performing-crossvalidation)
 7. [Notebooks](#notebooks)
 
 ## Directory structure
