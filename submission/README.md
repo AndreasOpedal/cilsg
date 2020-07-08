@@ -32,6 +32,8 @@ The following packages are needed (Python 3.8.0):
 + matplotlib=3.1.2
 + tqdm=4.45.0
 
+We also added a *requirements.txt* file for convenience.
+
 ## Setup
 
 Some algorithms (*.pyx* extension) are implemented using Cython to speed-up the computations. In order to run these algorithms, first execute the following commands:
