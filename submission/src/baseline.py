@@ -29,6 +29,8 @@ class SVD(AlgoBase):
                                   By default 'zeros'
         '''
 
+        AlgoBase.__init__(self)
+
         self.n_factors = n_factors
         self.impute_strategy = impute_strategy
 
@@ -135,6 +137,8 @@ class ALS(AlgoBase):
         high (int): the highest rating value. By default 5
         verbose (bool): whether the algorithm should be verbose. By default False
         '''
+
+        AlgoBase.__init__(self)
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs

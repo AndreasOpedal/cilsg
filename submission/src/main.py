@@ -143,7 +143,7 @@ if __name__ == '__main__':
     elif args.exec_mode == 'random_search':
         random_search(algo_class, dataset, source.dist_grids[args.algo_class], k=args.k, n_iters=args.rs_iters)
     elif args.exec_mode == 'predict':
-        file_name = source.NEW_PREDICTIONS_DIR + args.algo_class.lower() + '-' + str(args.model_num) + '.csv'
+        file_name = source.PREDICTIONS_DIR + args.algo_class.lower() + '-' + str(args.model_num) + '.csv'
         training_set = dataset.build_full_trainset()
         predict(model, training_set, indexes, file_name)
     else:

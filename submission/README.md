@@ -54,7 +54,7 @@ We implement the following `algorithm`s:
 + `PLSA` (*src/plsa.pyx*): an implementation of pLSA, which uses the EM-algorithm, where we add an additional SVD step to compute the final prediction
 + `SVDthr` (*src/thresholding.py*): an implementation of SVD thresholding
 + `VAE` (*??*): an implementation of a variational auto-encoder
-+ `Ensemble` (*notebooks/ensemble.ipynb*): an ensemble method where the results of different algorithms are averaged
++ `Ensemble` (*src/ensemble.py*): an ensemble method where the results of different algorithms are averaged
 
 Hyper-parameters for each class are well documented in the source code.
 
@@ -112,7 +112,10 @@ The following options are available:
 + `--verbose` (bool): whether the algorithm should be verbose. By default False
 + `--seed` (int): the random seed. By default 0
 
-**Note**: algorithms `VAE` and `Ensemble` can only be run via notebooks (see `notebooks/` directory).
+We recommend setting `verbose=True` for `cv` and `predict`.
+
+**Note**: algorithm `VAE` can only be run via notebook (see *notebooks/* directory).
+**Note**: algorithm `Ensemble` can only be run in `predict` mode.
 
 ### Example: prediction
 
@@ -147,6 +150,11 @@ python3 main.py predict SVDPP2
 python3 main.py predict PLSA
 ```
 
-To execute the `VAE`, go to the *notebook/* directory and run the `vae.ipynb` notebook.
+To execute `VAE`, go to the *notebook/* directory and run the `vae.ipynb` notebook.
 
-After this all the base model are ready. Now run the ensemble (still to check parameters and stuff).
+After this all the base model are ready. Now run the ensemble with the following command:
+
+```
+cd srd/
+python3 main.py predict Ensemble
+```

@@ -7,13 +7,14 @@ from factorization import SVDPP2
 from baseline import SVD, ALS
 from thresholding import SVDthr
 from plsa import PLSA
+from ensemble import Ensemble
 
 ###############################################################################################
 
 # Constants
 TRAIN_DATA_PATH = '../data/data-train.csv'
 PREDICTION_INDEXES_PATH = '../data/sample-submission.csv'
-NEW_PREDICTIONS_DIR = 'predictions/'
+PREDICTIONS_DIR = '../predictions/'
 
 ###############################################################################################
 
@@ -25,7 +26,8 @@ algo_classes['SVD'] = SVD
 algo_classes['ALS'] = ALS
 algo_classes['SVDPP2'] = SVDPP2
 algo_classes['SVDthr'] = SVDthr
-algo_classes['pLSA'] = PLSA
+algo_classes['PLSA'] = PLSA
+algo_classes['Ensemble'] = Ensemble
 
 ###############################################################################################
 
@@ -38,13 +40,14 @@ instances['ALS'] = {}
 instances['SVDPP2'] = {}
 instances['SVDthr'] = {}
 instances['PLSA'] = {}
+instances['Ensemble'] = {}
 
 # Index single algorithm classes. Further model instances can manually be added.
 instances['SVD'][1] = SVD()
 instances['ALS'][1] = ALS()
 instances['SVDPP2'][1] = SVDPP2()
 instances['SVDthr'][1] = SVDthr()
-instances['PLSA'][1] = PLSA()
+instances['Ensemble'][1] = Ensemble()
 
 ###############################################################################################
 
@@ -87,14 +90,14 @@ param_grids['SVDPP2'] = {
 }
 
 # Parameter grid for SVDthr
-param_grid['SVDthr'] = {
+param_grids['SVDthr'] = {
     'tao': [10000, 15000],
     'step_size': [1.8, 1.99, 2.05],
     'eps': [0.1, 0.2]
 }
 
 # Parameter grid for PLSA
-param_grid['PLSA'] = {
+param_grids['PLSA'] = {
     'n_latent': [5, 10, 15],
     'n_epochs': [2, 5],
     'to_normalize': [False, True],
