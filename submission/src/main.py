@@ -75,9 +75,9 @@ def random_search(algo_class, data, dict, k=10, n_iters=100):
     results = pd.DataFrame.from_dict(rs.cv_results)
     print(results)
 
-def dump(model, data, indexes, file_name):
+def predict(model, data, indexes, file_name):
     '''
-    Dumps the predictions of the selected model on a csv file.
+    Predict the missing values and write them on a csv file.
     The model is trained on the whole training set.
 
     Parameters:
@@ -100,7 +100,7 @@ def dump(model, data, indexes, file_name):
 if __name__ == '__main__':
     # Argparser parameters
     parser = argparse.ArgumentParser(description='Collaborative Filtering')
-    parser.add_argument('exec_mode', type=str, metavar='execution mode', help='the execution mode (options: cv, kfold, grid_search, random_search, dump, save)')
+    parser.add_argument('exec_mode', type=str, metavar='execution mode', help='the execution mode (options: cv, kfold, grid_search, random_search, predict)')
     parser.add_argument('algo_class', type=str, metavar='algorithm class', help='the algorithm class to use (see names of classes in factorization.pyx and baseline.py)')
     parser.add_argument('--model_num', type=int, default=1, help='the number of the model (instance of an algo_class) to use (default: 1)')
     parser.add_argument('--k', type=int, default=10, help='the k for kfold cross-validation (default: 10)')
@@ -142,9 +142,9 @@ if __name__ == '__main__':
         grid_search(algo_class, dataset, source.param_grids[args.algo_class], k=args.k)
     elif args.exec_mode == 'random_search':
         random_search(algo_class, dataset, source.dist_grids[args.algo_class], k=args.k, n_iters=args.n_iters)
-    elif args.exec_mode == 'dump':
+    elif args.exec_mode == 'predict':
         file_name = source.NEW_PREDICTIONS_DIR + args.algo_class.lower() + '-' + str(args.model_num) + '.csv'
         training_set = dataset.build_full_trainset()
-        dump(model, training_set, indexes, file_name)
+        predict(model, training_set, indexes, file_name)
     else:
         print('Invalid computation selected.')
