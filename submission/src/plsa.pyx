@@ -102,9 +102,6 @@ class PLSA(AlgoBase):
 
         AlgoBase.fit(self, trainset)
 
-        # Read training set
-        self.trainset = trainset
-
         # Normalize
         if self.to_normalize:
             # Prepare dataframe

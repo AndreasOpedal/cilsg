@@ -90,9 +90,6 @@ class SVDPP2(AlgoBase):
 
         AlgoBase.fit(self, trainset)
 
-        # Read training set
-        self.trainset = trainset
-
         # Call SGD
         self.sgd()
 

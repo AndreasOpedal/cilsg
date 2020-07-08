@@ -48,9 +48,6 @@ class SVD(AlgoBase):
 
         AlgoBase.fit(self, trainset)
 
-        # Read training set
-        self.trainset = trainset
-
         # Call SVD
         self.svd()
 
@@ -162,9 +159,6 @@ class ALS(AlgoBase):
         '''
 
         AlgoBase.fit(self, trainset)
-
-        # Read training set
-        self.trainset = trainset
 
         # Call ALS
         self.als()
