@@ -19,7 +19,7 @@ We explain how to the submission directory is organized, how to run the algorith
 
 ## Directory structure
 
-This submission directory is structured as follows: the *data/* directory contains the training data and the missing entries for the submission. The *src/* data contains the implementation of most algorithms (apart from the auto-encoder). The *notebook/* directory contains notebooks for each algorithm. Finally, the *predictions/* directory holds the predictions for our best models.
+This submission directory is structured as follows: the *data/* directory contains the training data and the missing entries for the submission. The *src/* data contains the implementation of most algorithms. The *notebook/* directory contains notebooks for each algorithm. Finally, the *predictions/* directory holds the predictions for our best models.
 
 ## Requirements
 
@@ -73,7 +73,7 @@ instances['SVD'][2] = SVD(n_factors=50)
 
 ### Adding a new algorithm
 
-To add a new algorithm, we first refer to the following link[https://surprise.readthedocs.io/en/stable/building_custom_algo.html] on how to build a custom class using the Surprise package.
+To add a new algorithm, we first refer to the following [link](https://surprise.readthedocs.io/en/stable/building_custom_algo.html) on how to build a custom class using the Surprise package.
 After doing that, we need to add the new algorithm to the *src/source.py* file. Let us assume this new algorithm is called `MyAlgo` and it is written in the file *src/myalgo.py*. We add the following lines in the *src/source.py*:
 
 1. `from myalgo.py import MyAlgo`
