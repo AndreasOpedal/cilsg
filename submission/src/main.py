@@ -34,7 +34,6 @@ def kfold(model, data, k=10):
     model (surprise.AlgoBase): the model to test
     data (surprise.Dataset): the data to use
     k (int): the number of folds. By default 10
-    load (bool): whether the weights of the model should be loaded
     '''
     # Set up kfold
     dict = cross_validate(model, data, measures=['rmse'], cv=k, n_jobs=-1, verbose=True)
@@ -74,7 +73,7 @@ def random_search(algo_class, data, k=10, n_iters=100):
     results = pd.DataFrame.from_dict(rs.cv_results)
     print(results)
 
-def dump(model, data, indexes, file_name, load_dir):
+def dump(model, data, indexes, file_name):
     '''
     Dumps the predictions of the selected model on a csv file.
     The model is trained on the whole training set.
@@ -84,7 +83,6 @@ def dump(model, data, indexes, file_name, load_dir):
     data (surprise.Trainset): the training data
     indexes (list): a list of tuples, where each tuple contains the indexes (u,i) which need to be predicted
     file_name (str): the name of the csv file
-    load_dir (str): the directory from which to load the weights
     '''
     # Fit model
     model.fit(data)
@@ -145,6 +143,6 @@ if __name__ == '__main__':
     elif args.exec_mode == 'dump':
         file_name = source.NEW_PREDICTIONS_DIR + args.algo_class.lower() + '-' + str(args.model_num) + '.csv'
         training_set = dataset.build_full_trainset()
-        dump(model, training_set, indexes, file_name, weights_file_path)
+        dump(model, training_set, indexes, file_name)
     else:
         print('Invalid computation selected.')
