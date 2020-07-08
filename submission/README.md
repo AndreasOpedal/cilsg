@@ -58,6 +58,8 @@ We implement the following `algorithm`s:
 
 Hyper-parameters for each class are well documented in the source code.
 
+**Note**: algorithm `VAE` can only be run via notebook (see *notebooks/* directory).
+
 ### Structure
 
 With the exception of `VAE` and `Ensemble`, algorithms are managed in the *src/source.py* file. Two dictionaries are used to organize algorithm classes and instances. The `algo_classes` dictionary maps algorithms' names to algorithms Python classes, e.g. `algo_classes['SVD'] = SVD`. The `instances` dictionary maps algorithms' names to a dictionary of that algorithm's instances. Instances are mapped by a unique number. For example, the default version of the `SVD` algorithm is mapped as `instances['SVD'][1] = SVD()`.
@@ -92,6 +94,8 @@ Each algorithm can be executed in a specific `mode`. The available modes are the
 + `random_search`: performs random search on the selected algorithm class using the parameter distribution grid in the *src/source.py* file
 + `predict`: trains the selected algorithm instance on the whole dataset and writes the predictions in a *.csv* file in the *predictions/* directory
 
+**Note**: algorithm `Ensemble` can only be run in `predict` mode.
+
 ## Execution
 
 To execute our code in the command line, run the following commands:
@@ -113,10 +117,6 @@ The following options are available:
 + `--seed` (int): the random seed. By default 0
 
 We recommend setting `verbose=True` for `cv` and `predict`.
-
-**Note**: algorithm `VAE` can only be run via notebook (see *notebooks/* directory).
-
-**Note**: algorithm `Ensemble` can only be run in `predict` mode.
 
 ### Example: prediction
 
