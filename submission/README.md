@@ -45,7 +45,7 @@ python3 setup.py build_ext --inplace
 
 ## Algorithms
 
-We implemented the following `algorithm`s:
+We implement the following `algorithm`s:
 
 + `Mean` (*src/baseline.py*): this simple algorithm predicts the global sample mean for each missing entry
 + `SVD` (*src/baseline.py*): compute the SVD of the training matrix. The training matrix can be imputed with the sample mean, sample median, or with zeros
