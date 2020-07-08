@@ -8,13 +8,13 @@ We explain how to the submission directory is organized, how to run the algorith
 2. [Requirements](#requirements)
 3. [Setup](#setup)
 4. [Algorithms](#algorithms)
-  + [Structure](#structure)
-  + [Adding a new instance](#new_instance)
-  + [Adding a new algorithm](#new_algo)
+    * [Structure](#structure)
+    * [Adding a new instance](#newinstance)
+    * [Adding a new algorithm](#newalgo)
 5. [Modes](#modes)
 6. [Execution](#execution)
-  + [Example: reproducing the results](#reproduce)
-  + [Example: performing cross-validation](#crossvalidation)
+    * [Example: reproducing the results](#reproduce)
+    * [Example: performing cross-validation](#crossvalidation)
 7. [Notebooks](#notebooks)
 
 ## Directory structure
@@ -123,7 +123,7 @@ python3 main.py dump SVD
 
 ### Example: performing cross-validation
 
-Let us perform cross-validation on the *SVD* instance we added in the [previous](#new_instance) section:
+Let us perform cross-validation on the *SVD* instance we added in the [previous](#newinstance) section:
 
 ```
 cd src/
