@@ -5,7 +5,6 @@ The algorithms are implementated with the help of the Surprise package, which si
 and cross-validation.
 
 The implemented algorithms are:
-- Mean
 - SVD
 - ALS
 '''
@@ -14,60 +13,6 @@ import numpy as np
 import math
 from surprise import AlgoBase, Dataset, PredictionImpossible
 from surprise.prediction_algorithms.knns import KNNBasic
-
-class Mean(AlgoBase):
-    '''
-    Basic approach which predicts empty ratings with the ratings global mean.
-    '''
-
-    def __init__(self):
-        '''
-        Initializes the class with the given parameters.
-        '''
-
-        self.trainset = None
-        self.mu = None
-
-    def fit(self, trainset):
-        '''
-        Fits the model to the provided dataset
-
-        Parameters:
-        trainset (surprise.Trainset): the training set to be fitted
-        '''
-
-        AlgoBase.fit(self, trainset)
-
-        # Read training set
-        self.trainset = trainset
-
-        # Compute global mean
-        self.mu = self.trainset.global_mean
-
-        return self
-
-    def estimate(self, u, i):
-        '''
-        Returns the prediction for the given user and item
-
-        Parameters
-        u (int): the user index
-        i (int): the item index
-
-        Retuns:
-        rui (float): the prediction
-        '''
-
-        known_user = self.trainset.knows_user(u)
-        known_item = self.trainset.knows_item(i)
-
-        if known_user and known_item:
-            # Compute prediction
-            rui = self.mu
-        else:
-            raise PredictionImpossible('User and item are unknown.')
-
-        return rui
 
 class SVD(AlgoBase):
     '''

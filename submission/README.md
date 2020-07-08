@@ -13,9 +13,10 @@ We explain how to the submission directory is organized, how to run the algorith
     * [Adding a new algorithm](#adding-a-new-algorithm)
 5. [Modes](#modes)
 6. [Execution](#execution)
-    * [Example: reproducing the results](#example-reproducing-the-results)
-    * [Example: performing crossvalidation](#example-performing-crossvalidation)
+    * [Example: prediction](#example-prediction)
+    * [Example: crossvalidation](#example-crossvalidation)
 7. [Notebooks](#notebooks)
+8. [Reproducing the final model](#reproducing-the-final-model)
 
 ## Directory structure
 
@@ -47,7 +48,6 @@ python3 setup.py build_ext --inplace
 
 We implement the following `algorithm`s:
 
-+ `Mean` (*src/baseline.py*): this simple algorithm predicts the global sample mean for each missing entry
 + `SVD` (*src/baseline.py*): compute the SVD of the training matrix. The training matrix can be imputed with the sample mean, sample median, or with zeros
 + `ALS` (*src/baseline.py*): an implementation of alternating least squares
 + `SVDPP2` (*src/factorization.pyx*): a variation of the SVD++ algorithm
@@ -114,7 +114,7 @@ The following options are available:
 
 **Note**: algorithms `VAE` and `Ensemble` can only be run via notebooks (see `notebooks/` directory).
 
-### Example: reproducing the results
+### Example: prediction
 
 Let us reproduce the results for `SVD`, by training the algorithm on the full trainset and writing its predictions to a *.csv* file:
 
@@ -123,7 +123,7 @@ cd src/
 python3 main.py predict SVD
 ```
 
-### Example: performing crossvalidation
+### Example: crossvalidation
 
 Let us perform cross-validation on the `SVD` instance we added in the [previous](#adding-a-new-instance) section:
 
@@ -136,3 +136,17 @@ python3 main.py cv SVD --model_num=2
 
 Notebooks are meant to give the user a better understanding of the code implemented in *src/*. Their goal is to provide the mathematical background, clarify the code, and creating plots to better illustrate how the algorithm learns the weights.
 Notebooks are not meant however to perform cross-validation, as it would be quite time-consuming.
+
+## Reproducing the final model
+
+In order to reproduce our final model, first run the base models used in the ensemble: `SVDPP2`, `PLSA`, and `VAE`. For the first two models, run the following commands:
+
+```
+cd src/
+python3 main.py predict SVDPP2
+python3 main.py predict PLSA
+```
+
+To execute the `VAE`, go to the *notebook/* directory and run the `vae.ipynb` notebook.
+
+After this all the base model are ready. Now run the ensemble (still to check parameters and stuff).

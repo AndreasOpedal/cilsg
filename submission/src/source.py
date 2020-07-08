@@ -4,7 +4,7 @@ This file which contains constants, algorithm classes, model instances, and para
 
 from scipy import stats
 from factorization import SVDPP2
-from baseline import Mean, SVD, ALS
+from baseline import SVD, ALS
 from thresholding import SVDthr
 from plsa import PLSA
 
@@ -21,7 +21,6 @@ NEW_PREDICTIONS_DIR = 'predictions/'
 algo_classes = {}
 
 # Initialize algo_classes
-algo_classes['Mean'] = Mean
 algo_classes['SVD'] = SVD
 algo_classes['ALS'] = ALS
 algo_classes['SVDPP2'] = SVDPP2
@@ -34,7 +33,6 @@ algo_classes['pLSA'] = PLSA
 instances = {}
 
 # Initialize instances
-instances['Mean'] = {}
 instances['SVD'] = {}
 instances['ALS'] = {}
 instances['SVDPP2'] = {}
@@ -42,7 +40,6 @@ instances['SVDthr'] = {}
 instances['PLSA'] = {}
 
 # Index single algorithm classes. Further model instances can manually be added.
-instances['Mean'][1] = Mean()
 instances['SVD'][1] = SVD()
 instances['ALS'][1] = ALS()
 instances['SVDPP2'][1] = SVDPP2()
