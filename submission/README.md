@@ -115,6 +115,7 @@ The following options are available:
 We recommend setting `verbose=True` for `cv` and `predict`.
 
 **Note**: algorithm `VAE` can only be run via notebook (see *notebooks/* directory).
+
 **Note**: algorithm `Ensemble` can only be run in `predict` mode.
 
 ### Example: prediction
