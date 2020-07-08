@@ -34,49 +34,50 @@ def kfold(model, data, k=10):
     model (surprise.AlgoBase): the model to test
     data (surprise.Dataset): the data to use
     k (int): the number of folds. By default 10
-    load (bool): whether the weights of the model should be loaded
     '''
     # Set up kfold
     dict = cross_validate(model, data, measures=['rmse'], cv=k, n_jobs=-1, verbose=True)
 
-def grid(algo_class, data, k=10):
+def grid(algo_class, data, dict, k=10):
     '''
     Performs parameter grid search. See source.py for the parameter grid. The test metric is RMSE.
 
     Parameters:
     algo_class (surprise.AlgoBase (class)): the class of algorithm to use in the search
     data (surprise.Dataset): the data to use
+    dict (dictionary): the dictionary holding the parameter grid
     k (int): the number of folds. By default 10
     '''
     # Initialize search
-    gs = GridSearchCV(algo_class=algo_class, param_grid=source.param_grid, measures=['rmse'], cv=k, joblib_verbose=100, n_jobs=-1)
+    gs = GridSearchCV(algo_class=algo_class, param_grid=dict, measures=['rmse'], cv=k, joblib_verbose=100, n_jobs=-1)
     gs.fit(data)
     print(gs.best_score['rmse'])
     print(gs.best_params['rmse'])
     results = pd.DataFrame.from_dict(gs.cv_results)
     print(results)
 
-def random_search(algo_class, data, k=10, n_iters=100):
+def random_search(algo_class, data, dict, k=10, n_iters=100):
     '''
     Performs parameter random search. See source.py for the parameter distribution. The test metric is RMSE.
 
     Parameters:
     algo_class (surprise.AlgoBase (class)): the class of algorithm to use in the search
     data (surprise.Dataset): the data to use
+    dict (dictionary): the dictionary holding the distribution grid
     k (int): the number of folds. By default 10
     n_iters (int): the number of iterations. By default 100.
     '''
     # Initialize search
-    rs = RandomizedSearchCV(algo_class=algo_class, param_distributions=source.dist_grid, measures=['rmse'], cv=k, joblib_verbose=100, n_iter=n_iters, n_jobs=-1)
+    rs = RandomizedSearchCV(algo_class=algo_class, param_distributions=dict, measures=['rmse'], cv=k, joblib_verbose=100, n_iter=n_iters, n_jobs=-1)
     rs.fit(data)
     print(rs.best_score['rmse'])
     print(rs.best_params['rmse'])
     results = pd.DataFrame.from_dict(rs.cv_results)
     print(results)
 
-def dump(model, data, indexes, file_name, load_dir):
+def predict(model, data, indexes, file_name):
     '''
-    Dumps the predictions of the selected model on a csv file.
+    Predict the missing values and write them on a csv file.
     The model is trained on the whole training set.
 
     Parameters:
@@ -84,7 +85,6 @@ def dump(model, data, indexes, file_name, load_dir):
     data (surprise.Trainset): the training data
     indexes (list): a list of tuples, where each tuple contains the indexes (u,i) which need to be predicted
     file_name (str): the name of the csv file
-    load_dir (str): the directory from which to load the weights
     '''
     # Fit model
     model.fit(data)
@@ -100,11 +100,11 @@ def dump(model, data, indexes, file_name, load_dir):
 if __name__ == '__main__':
     # Argparser parameters
     parser = argparse.ArgumentParser(description='Collaborative Filtering')
-    parser.add_argument('exec_mode', type=str, metavar='execution mode', help='the execution mode (options: cv, kfold, grid, random_search, dump, save)')
+    parser.add_argument('exec_mode', type=str, metavar='execution mode', help='the execution mode (options: cv, kfold, grid_search, random_search, predict)')
     parser.add_argument('algo_class', type=str, metavar='algorithm class', help='the algorithm class to use (see names of classes in factorization.pyx and baseline.py)')
     parser.add_argument('--model_num', type=int, default=1, help='the number of the model (instance of an algo_class) to use (default: 1)')
     parser.add_argument('--k', type=int, default=10, help='the k for kfold cross-validation (default: 10)')
-    parser.add_argument('--n_iters', type=int, default=10, help='the number of iterations to perform in random search (default: 10)')
+    parser.add_argument('--rs_iters', type=int, default=10, help='the number of iterations to perform in random search (default: 10)')
     parser.add_argument('--verbose', type=bool, default=False, help='whether the algorithm should be verbose (default: False)')
     parser.add_argument('--seed', type=int, default=0, help='the random seed (default: 0)')
 
@@ -138,13 +138,13 @@ if __name__ == '__main__':
         cv(model, dataset)
     elif args.exec_mode == 'kfold':
         kfold(model, dataset, k=args.k)
-    elif args.exec_mode == 'grid':
-        grid(algo_class, dataset, k=args.k)
+    elif args.exec_mode == 'grid_search':
+        grid_search(algo_class, dataset, source.param_grids[args.algo_class], k=args.k)
     elif args.exec_mode == 'random_search':
-        random_search(algo_class, dataset, k=args.k, n_iters=args.n_iters)
-    elif args.exec_mode == 'dump':
-        file_name = source.NEW_PREDICTIONS_DIR + args.algo_class.lower() + '-' + str(args.model_num) + '.csv'
+        random_search(algo_class, dataset, source.dist_grids[args.algo_class], k=args.k, n_iters=args.rs_iters)
+    elif args.exec_mode == 'predict':
+        file_name = source.PREDICTIONS_DIR + args.algo_class.lower() + '-' + str(args.model_num) + '.csv'
         training_set = dataset.build_full_trainset()
-        dump(model, training_set, indexes, file_name, weights_file_path)
+        predict(model, training_set, indexes, file_name)
     else:
         print('Invalid computation selected.')

@@ -5,7 +5,6 @@ The algorithms are implementated with the help of the Surprise package, which si
 and cross-validation.
 
 The implemented algorithms are:
-- Mean
 - SVD
 - ALS
 '''
@@ -15,66 +14,12 @@ import math
 from surprise import AlgoBase, Dataset, PredictionImpossible
 from surprise.prediction_algorithms.knns import KNNBasic
 
-class Mean(AlgoBase):
-    '''
-    Basic approach which predicts empty ratings with the ratings global mean.
-    '''
-
-    def __init__(self):
-        '''
-        Initializes the class with the given parameters.
-        '''
-
-        self.trainset = None
-        self.mu = None
-
-    def fit(self, trainset):
-        '''
-        Fits the model to the provided dataset
-
-        Parameters:
-        trainset (surprise.Trainset): the training set to be fitted
-        '''
-
-        AlgoBase.fit(self, trainset)
-
-        # Read training set
-        self.trainset = trainset
-
-        # Compute global mean
-        self.mu = self.trainset.global_mean
-
-        return self
-
-    def estimate(self, u, i):
-        '''
-        Returns the prediction for the given user and item
-
-        Parameters
-        u (int): the user index
-        i (int): the item index
-
-        Retuns:
-        rui (float): the prediction
-        '''
-
-        known_user = self.trainset.knows_user(u)
-        known_item = self.trainset.knows_item(i)
-
-        if known_user and known_item:
-            # Compute prediction
-            rui = self.mu
-        else:
-            raise PredictionImpossible('User and item are unknown.')
-
-        return rui
-
 class SVD(AlgoBase):
     '''
     Implementation of SVD.
     '''
 
-    def __init__(self, n_factors=160, impute_strategy=None):
+    def __init__(self, n_factors=160, impute_strategy='zeros'):
         '''
         Initializes the class with the given parameters.
 
@@ -83,6 +28,8 @@ class SVD(AlgoBase):
         impute_strategy (object): the strategy to use to impute the non-rated items. The options are 'zeros', 'mean', 'median'.
                                   By default 'zeros'
         '''
+
+        AlgoBase.__init__(self)
 
         self.n_factors = n_factors
         self.impute_strategy = impute_strategy
@@ -100,9 +47,6 @@ class SVD(AlgoBase):
         '''
 
         AlgoBase.fit(self, trainset)
-
-        # Read training set
-        self.trainset = trainset
 
         # Call SVD
         self.svd()
@@ -191,6 +135,8 @@ class ALS(AlgoBase):
         verbose (bool): whether the algorithm should be verbose. By default False
         '''
 
+        AlgoBase.__init__(self)
+
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.init_mean = init_mean
@@ -213,9 +159,6 @@ class ALS(AlgoBase):
         '''
 
         AlgoBase.fit(self, trainset)
-
-        # Read training set
-        self.trainset = trainset
 
         # Call ALS
         self.als()
