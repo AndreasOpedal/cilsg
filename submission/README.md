@@ -49,7 +49,7 @@ We implemented the following algorithms:
 + `SVD (src/baseline.py)`: compute the SVD of the training matrix. The training matrix can be imputed with the sample mean, sample median, or with zeros
 + `ALS (src/baseline.py)`: an implementation of alternating least squares
 + `SVDPP2 (src/factorization.pyx)`: a variation of the SVD++ algorithm
-+ `pLSA (src/plsa.pyx)`: an implementation of pLSA, which uses the EM-algorithm, where we add an additional SVD step to compute the final prediction
++ `PLSA (src/plsa.pyx)`: an implementation of pLSA, which uses the EM-algorithm, where we add an additional SVD step to compute the final prediction
 + `SVDthr (src/thresholding.py)`: an implementation of SVD thresholding
 + `VAE (??)`: an implementation of a variational auto-encoder
 + `Ensemble (notebooks/ensemble.ipynb)`: an ensemble method where the results of different algorithms are averaged

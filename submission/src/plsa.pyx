@@ -4,7 +4,7 @@ import pandas as pd
 from surprise import Reader, Dataset
 from surprise import AlgoBase, PredictionImpossible
 
-class pLSA(AlgoBase):
+class PLSA(AlgoBase):
     '''
     Implementation of the pLSA algorithm using the EM-algorithm. After that, SVD is used to get the final
     prediction matrix
@@ -18,7 +18,7 @@ class pLSA(AlgoBase):
         n_latent (int): the number of latent states. By default 5
         n_eig (int): the number of eigenvalues to use in the SVD. By default 8.
         n_epochs (int): the number of iterations. By default 5
-        normalized (bool): whether to normalize observed rating matrix. By default False
+        normalized (bool): whether to normalize observed rating matrix. By default True
         alpha (float): smooth factor to calculate user's mean and variance. Only used if "normalized" is True. By default 5
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
@@ -135,19 +135,19 @@ class pLSA(AlgoBase):
         A = np.zeros((self.trainset.n_users,self.trainset.n_items))
 
         # Fill the ratings
-        for u, i, r in self.trainset.all_ratings():
-            A[u,i] = r
+        for _, row in self.df.iterrows():
+            A[int(row['row']),int(row['col'])] = row['Prediction']
 
-        # Get non-zero indeces
-        non_zeros_indeces = np.nonzero(A)
-
-        # Impute using (computed) prediction matrix
-        A[non_zeros_indeces] = self.pred_matrix[non_zeros_indeces]
+        # Impute using the (computed) prediction matrix
+        for u in range(self.trainset.n_users):
+            for i in range(self.trainset.n_items):
+                if A[u,i] < 1:
+                    A[u,i] = self.pred_matrix[u,i]
 
         # Compute SVD
         U, s, Vh = np.linalg.svd(A)
         s = s[:self.n_eig]
-        self.pred_matrix = U[:, :s.shape[0]]@np.diag(s)@Vh[:s.shape[0], :]
+        self.pred_matrix = U[:,:s.shape[0]]@np.diag(s)@Vh[:s.shape[0],:]
 
     def em(self):
         '''

@@ -6,7 +6,7 @@ from scipy import stats
 from factorization import SVDPP2
 from baseline import Mean, SVD, ALS
 from thresholding import SVDthr
-from plsa import pLSA
+from plsa import PLSA
 
 ###############################################################################################
 
@@ -26,7 +26,7 @@ algo_classes['SVD'] = SVD
 algo_classes['ALS'] = ALS
 algo_classes['SVDPP2'] = SVDPP2
 algo_classes['SVDthr'] = SVDthr
-algo_classes['pLSA'] = pLSA
+algo_classes['pLSA'] = PLSA
 
 ###############################################################################################
 
@@ -39,7 +39,7 @@ instances['SVD'] = {}
 instances['ALS'] = {}
 instances['SVDPP2'] = {}
 instances['SVDthr'] = {}
-instances['pLSA'] = {}
+instances['PLSA'] = {}
 
 # Index single algorithm classes. Further model instances can manually be added.
 instances['Mean'][1] = Mean()
@@ -47,7 +47,7 @@ instances['SVD'][1] = SVD()
 instances['ALS'][1] = ALS()
 instances['SVDPP2'][1] = SVDPP2()
 instances['SVDthr'][1] = SVDthr()
-instances['pLSA'][1] = pLSA()
+instances['PLSA'][1] = PLSA()
 
 ###############################################################################################
 
@@ -96,8 +96,8 @@ param_grid['SVDthr'] = {
     'eps': [0.1, 0.2]
 }
 
-# Parameter grid for pLSA
-param_grid['pLSA'] = {
+# Parameter grid for PLSA
+param_grid['PLSA'] = {
     'n_latent': [5, 10, 15],
     'n_epochs': [2, 5],
     'to_normalize': [False, True],
@@ -151,8 +151,8 @@ dist_grids['SVDthr'] = {
     'eps': stats.uniform(0.1, 0.3)
 }
 
-# Distribution grid for pLSA
-dist_grids['pLSA'] = {
+# Distribution grid for PLSA
+dist_grids['PLSA'] = {
     'n_latent': stats.randint(15, 25),
     'n_epochs': stats.randint(2, 5),
 }
