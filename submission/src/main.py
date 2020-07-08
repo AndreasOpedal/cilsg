@@ -104,7 +104,7 @@ if __name__ == '__main__':
     parser.add_argument('algo_class', type=str, metavar='algorithm class', help='the algorithm class to use (see names of classes in factorization.pyx and baseline.py)')
     parser.add_argument('--model_num', type=int, default=1, help='the number of the model (instance of an algo_class) to use (default: 1)')
     parser.add_argument('--k', type=int, default=10, help='the k for kfold cross-validation (default: 10)')
-    parser.add_argument('--n_iters', type=int, default=10, help='the number of iterations to perform in random search (default: 10)')
+    parser.add_argument('--rs_iters', type=int, default=10, help='the number of iterations to perform in random search (default: 10)')
     parser.add_argument('--verbose', type=bool, default=False, help='whether the algorithm should be verbose (default: False)')
     parser.add_argument('--seed', type=int, default=0, help='the random seed (default: 0)')
 
@@ -141,7 +141,7 @@ if __name__ == '__main__':
     elif args.exec_mode == 'grid_search':
         grid_search(algo_class, dataset, source.param_grids[args.algo_class], k=args.k)
     elif args.exec_mode == 'random_search':
-        random_search(algo_class, dataset, source.dist_grids[args.algo_class], k=args.k, n_iters=args.n_iters)
+        random_search(algo_class, dataset, source.dist_grids[args.algo_class], k=args.k, n_iters=args.rs_iters)
     elif args.exec_mode == 'predict':
         file_name = source.NEW_PREDICTIONS_DIR + args.algo_class.lower() + '-' + str(args.model_num) + '.csv'
         training_set = dataset.build_full_trainset()

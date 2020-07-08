@@ -105,8 +105,8 @@ The following options are available:
 
 + `-h`: help message
 + `--model_num` (int): the number of the algorithm instance. By default 1 (corresponding to our best model configurations)
-+ `--k` (int): the number of folds for the k-fold cross-validation. By default 10
-+ `--n_iters` (int): the number of iterations for the randomized grid search. By default 10
++ `--k` (int): the number of folds for the k-fold cross-validation, grid search, and random search. By default 10
++ `--rs_iters` (int): the number of iterations for random search. By default 10
 + `--verbose` (bool): whether the algorithm should be verbose. By default False
 + `--seed` (int): the random seed. By default 0
 
