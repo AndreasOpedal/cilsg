@@ -133,4 +133,4 @@ python3 main.py cv SVD --model_num=2
 ## Notebooks
 
 Notebooks are meant to give the user a better understanding of the code implemented in `src/`. Their goal is to provide the mathematical background, clarify the code, and creating plots to better illustrate how the algorithm learns the weights.
-Notebooks are not meant however to train the full model or to perform cross-validation, as it would be quite time-consuming. The exception to this rule is the notebook for the auto-encoder.
+Notebooks are not meant however to perform cross-validation, as it would be quite time-consuming. The exception to this rule is the notebook for the auto-encoder.
