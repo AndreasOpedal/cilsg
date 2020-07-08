@@ -121,7 +121,7 @@ cd src/
 python3 main.py dump SVD
 ```
 
-### Example: performing cross-validation
+### Example: performing crossvalidation
 
 Let us perform cross-validation on the *SVD* instance we added in the [previous](#adding-a-new-instance) section:
 
