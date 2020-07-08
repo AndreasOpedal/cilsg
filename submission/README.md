@@ -58,7 +58,7 @@ Hyper-parameters for each class are well documented in the source code.
 
 ### Structure
 
-With the exception of *VAE* and *Ensemble*, algorithms' creation is managed in the `src/source.py` file. Two dictionaries are used to organize algorithm classes and instances. The `algo_classes` dictionary maps algorithms' names to algorithms Python classes, e.g. `algo_classes['SVD'] = SVD`. The `instances` dictionary maps algorithms' names to a dictionary of that algorithm's instances. Instances are mapped by a unique number. For example, the default version of the *SVD* algorithm is mapped as `instances['SVD'][1] = SVD()`.
+With the exception of *VAE* and *Ensemble*, algorithms are managed in the `src/source.py` file. Two dictionaries are used to organize algorithm classes and instances. The `algo_classes` dictionary maps algorithms' names to algorithms Python classes, e.g. `algo_classes['SVD'] = SVD`. The `instances` dictionary maps algorithms' names to a dictionary of that algorithm's instances. Instances are mapped by a unique number. For example, the default version of the *SVD* algorithm is mapped as `instances['SVD'][1] = SVD()`.
 
 **Note**: the key for the algorithm class in both dictionaries must be spelled the same way as the name of the actual Python class.
 
