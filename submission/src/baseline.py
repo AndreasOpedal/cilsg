@@ -74,7 +74,7 @@ class SVD(AlgoBase):
     Implementation of SVD.
     '''
 
-    def __init__(self, n_factors=160, impute_strategy=None):
+    def __init__(self, n_factors=160, impute_strategy='zeros'):
         '''
         Initializes the class with the given parameters.
 

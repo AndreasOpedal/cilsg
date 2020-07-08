@@ -86,7 +86,7 @@ Each algorithm can be executed in a specific *mode*. The available modes are the
 
 + `cv`: performs cross-validation on the selected algorithm instance and computes the validation RMSE on a 0.25 split
 + `kfold`: performs k-fold cross-validation on the selected algorithm instance. The user can decide on the number of folds (10 by default)
-+ `grid`: performs grid search on the selected algorithm class using the parameter grid in the `src/source.py` file
++ `grid_search`: performs grid search on the selected algorithm class using the parameter grid in the `src/source.py` file
 + `random_search`: performs random search on the selected algorithm class using the parameter distribution grid in the `src/source.py` file
 + `dump`: trains the selected algorithm instance on the whole dataset and writes the predictions in a `.csv` file in the `predictions/` directory
 
