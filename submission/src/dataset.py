@@ -5,6 +5,10 @@ import sklearn
 from tqdm.auto import tqdm
 from scipy.sparse import csr_matrix
 
+"""
+This file contains preprocessing utilities used by neural models.
+"""
+
 def load_from_csv(filename):
     """
     Loads a sparse dataset from a CSV file.
@@ -18,9 +22,6 @@ def load_from_csv(filename):
     assert len(preds) == len(rows) == len(cols)
     rows = np.subtract(rows, 1)
     cols = np.subtract(cols, 1)
-#     if not is_split:
-#         assert np.min(rows) == 0
-#         assert np.min(cols) == 0
     return csr_matrix((preds, (rows, cols)))
 
 def _load_cached(filename):
@@ -69,9 +70,9 @@ def create_n_splits(filename, n=5, random_state=42):
         fold_data.to_csv(fold_filenames[i], index=False)
 
 
-def load_datasets():
-    X_train = np.sum([_load_cached("../data/data_train.csv.%d" % i) for i in [0,1,2,3]])
+def load_datasets(train_idx=[0,1,2,3], valid_idx=4):
+    X_train = np.sum([_load_cached("../data/data_train.csv.%d" % i) for i in train_idx])
     X_test = _load_cached("../data/sampleSubmission.csv")
-    X_valid = _load_cached("../data/data_train.csv.4")
-    # TODO: train-dev split
+    X_valid = _load_cached(f"../data/data_train.csv.{valid_idx}")
+
     return X_train, X_valid, X_test
