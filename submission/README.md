@@ -54,7 +54,7 @@ We implement the following `algorithm`s:
 + `SVDPP2` (*src/factorization.pyx*): a variation of the SVD++ algorithm
 + `PLSA` (*src/plsa.py*): an implementation of pLSA, which uses the EM-algorithm, where we add an additional SVD step to compute the final prediction
 + `SVDthr` (*src/thresholding.py*): an implementation of SVD thresholding
-+ `VAE` (*notebooks/vae.ipynb*): an implementation of a variational auto-encoder
++ `VAE` (*notebooks/VAE.ipynb*): an implementation of a variational auto-encoder
 + `Ensemble` (*src/ensemble.py*): an ensemble method where the results of different algorithms are averaged
 
 Hyper-parameters for each class are well documented in the source code.
@@ -127,6 +127,8 @@ Let us reproduce the results for `SVD`, by training the algorithm on the full tr
 cd src/
 python3 main.py predict SVD
 ```
+
+The `predict` mode generates a *.csv* file of the form *algorithm-model_num.csv*, where *algorithm* is the name of the `algorithm` in lower-case.
 
 ### Example: crossvalidation
 
