@@ -26,12 +26,13 @@ This submission directory is structured as follows: the *data/* directory contai
 
 The following packages are needed (Python 3.8.0):
 
-+ numpy=1.17.4
-+ pandas=0.25.3
-+ scikit-surprise=1.1.0
-+ Cython=0.29.16
-+ matplotlib=3.1.2
-+ tqdm=4.45.0
++ numpy>=1.17.4
++ pandas>=0.25.3
++ scikit-surprise>=1.1.0
++ Cython>=0.29.16
++ matplotlib>=3.1.2
++ tqdm>=4.45.0
++ torch>=1.4.0
 
 We also added a *requirements.txt* file for convenience.
 
@@ -51,9 +52,9 @@ We implement the following `algorithm`s:
 + `SVD` (*src/baseline.py*): compute the SVD of the training matrix. The training matrix can be imputed with the sample mean, sample median, or with zeros
 + `ALS` (*src/baseline.py*): an implementation of alternating least squares
 + `SVDPP2` (*src/factorization.pyx*): a variation of the SVD++ algorithm
-+ `PLSA` (*src/plsa.pyx*): an implementation of pLSA, which uses the EM-algorithm, where we add an additional SVD step to compute the final prediction
++ `PLSA` (*src/plsa.py*): an implementation of pLSA, which uses the EM-algorithm, where we add an additional SVD step to compute the final prediction
 + `SVDthr` (*src/thresholding.py*): an implementation of SVD thresholding
-+ `VAE` (*??*): an implementation of a variational auto-encoder
++ `VAE` (*notebooks/vae.ipynb*): an implementation of a variational auto-encoder
 + `Ensemble` (*src/ensemble.py*): an ensemble method where the results of different algorithms are averaged
 
 Hyper-parameters for each class are well documented in the source code.
@@ -159,3 +160,5 @@ After this all the base model are ready. Now run the ensemble with the following
 cd srd/
 python3 main.py predict Ensemble
 ```
+
+However, if executing the base models is too time-consuming, it is sufficient to run only the `Ensemble` model, as we already make available the predictions of the base models.

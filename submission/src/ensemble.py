@@ -1,14 +1,13 @@
 import numpy as np
 import pandas as pd
-from surprise import AlgoBase, PredictionImpossible
 import source
 
-class Ensemble(AlgoBase):
+class Ensemble:
     '''
     Implementation of an ensemble model, which makes predictions based on the average of SVDPP2, PLSA, and VAE.
     '''
 
-    def __init__(self, svdpp2_file=source.PREDICTIONS_DIR+'svdpp2-1.csv', plsa_file=source.PREDICTIONS_DIR+'plsa-1.csv', vae_file=source.PREDICTIONS_DIR+'vae-1.csv'):
+    def __init__(self, svdpp2_file='../predictions/svdpp2-1.csv', plsa_file='../predictions/plsa-1.csv', vae_file='../predictions/vae-1.csv'):
         '''
         Initializes the class with the given parameters.
 
@@ -18,13 +17,11 @@ class Ensemble(AlgoBase):
         vae_file (str): the file holding the predictions for the VAE model. By default ../predictions/vae-1.csv
         '''
 
-        AlgoBase.__init__(self)
-
         self.svdpp2_file = svdpp2_file
         self.plsa_file = plsa_file
         self.vae_file = vae_file
 
-        self.df_prediction = None
+        self.df_submission = None
 
     def clean_df(self, df):
         '''
@@ -46,61 +43,38 @@ class Ensemble(AlgoBase):
 
         return data_df
 
-    def fit(self, trainset):
+    def average(self):
         '''
         Computes the average ratings for the three base models.
-
-        Parameters:
-        trainset (surprise.Trainset): the training set to be fitted. Note that it is not used in this model
         '''
-
-        AlgoBase.fit(self, trainset)
 
         # Read predictions
         df_svdpp2 = pd.read_csv(self.svdpp2_file)
         df_plsa = pd.read_csv(self.plsa_file)
         df_vae = pd.read_csv(self.vae_file)
 
-        # Read prediction indexes
-        self.df_prediction = pd.read_csv(source.PREDICTION_INDEXES_PATH)
+        # Read submission indexes
+        self.df_submission = pd.read_csv(source.PREDICTION_INDEXES_PATH)
 
         # Clean dataframes
         df_svdpp2 = self.clean_df(df_svdpp2)
         df_plsa = self.clean_df(df_plsa)
         df_vae = self.clean_df(df_vae)
-        self.df_prediction = self.clean_df(self.df_prediction)
+        preds_submission = self.clean_df(self.df_submission)
 
         # Sort dataframes in the same way
-        df_svdpp2.sort_values(by=['col', 'row'], inplace=True)
-        df_plsa.sort_values(by=['col', 'row'], inplace=True)
-        df_vae.sort_values(by=['col', 'row'], inplace=True)
-        self.df_prediction.sort_values(by=['col', 'row'], inplace=True)
+        df_svdpp2.sort_values(by=['col','row'], inplace=True)
+        df_plsa.sort_values(by=['col','row'], inplace=True)
+        df_vae.sort_values(by=['col','row'], inplace=True)
+        preds_submission.sort_values(by=['col','row'], inplace=True)
 
         # Compute average
-        preds = np.mean(np.array([df_svdpp2['Prediction'].values, df_plsa['Prediction'].values, df_vae['Prediction'].values]), axis=0)
+        # preds = np.mean(np.array([df_svdpp2['Prediction'].values, df_plsa['Prediction'].values, df_vae['Prediction'].values]), axis=0)
+        preds = np.mean(np.array([df_svdpp2['Prediction'].values, df_vae['Prediction'].values]), axis=0)
+
 
         # Write predictions into prediction dataframe
-        self.df_prediction['Prediction'] = preds
+        preds_submission['Prediction'] = preds
 
-    def estimate(self, u, i):
-        '''
-        Returns the prediction for the given user and item
-
-        Parameters
-        u (int): the user index
-        i (int): the item index
-
-        Retuns:
-        est (float): the rating estimate
-        '''
-
-        known_user = self.trainset.knows_user(u)
-        known_item = self.trainset.knows_item(i)
-
-        if known_user and known_item:
-            # Compute prediction
-            est = self.df_prediction.loc[(self.df_prediction['row']==u) & (self.df_prediction['col']==i)]['Prediction']
-        else:
-            raise PredictionImpossible('User and item are unknown.')
-
-        return est
+        # Rewrite predictions to submission dataframe
+        self.df_submission['Prediction'] = preds_submission['Prediction']

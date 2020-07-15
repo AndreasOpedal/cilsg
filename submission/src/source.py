@@ -47,6 +47,7 @@ instances['SVD'][1] = SVD()
 instances['ALS'][1] = ALS()
 instances['SVDPP2'][1] = SVDPP2()
 instances['SVDthr'][1] = SVDthr()
+instances['PLSA'][1] = PLSA()
 instances['Ensemble'][1] = Ensemble()
 
 ###############################################################################################

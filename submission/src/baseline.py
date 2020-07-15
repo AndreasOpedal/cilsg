@@ -19,14 +19,14 @@ class SVD(AlgoBase):
     Implementation of SVD.
     '''
 
-    def __init__(self, n_factors=160, impute_strategy='zeros'):
+    def __init__(self, n_factors=160, impute_strategy=None):
         '''
         Initializes the class with the given parameters.
 
         Parameters:
         n_factors (int): the number of latent features. By default 160
-        impute_strategy (object): the strategy to use to impute the non-rated items. The options are 'zeros', 'mean', 'median'.
-                                  By default 'zeros'
+        impute_strategy (object): the strategy to use to impute the non-rated items. The options are 'mean', 'median', or any integer
+                                  value. By default None (filled with zeros)
         '''
 
         AlgoBase.__init__(self)
@@ -34,7 +34,6 @@ class SVD(AlgoBase):
         self.n_factors = n_factors
         self.impute_strategy = impute_strategy
 
-        self.trainset = None
         self.U = None
         self.V = None
 
@@ -66,11 +65,14 @@ class SVD(AlgoBase):
             X[u,i] = r
 
         # Impute empty ratings (if instructed)
-        if self.impute_strategy == 'mean':
-            X[X<1] = self.trainset.global_mean
+        if isinstance(self.impute_strategy, int):
+            X[X<1] = int(self.impute_strategy)
+        elif self.impute_strategy == 'mean':
+            for u in range(self.trainset.n_users):
+                X[u,:] = np.where(X[u,:]<1, np.mean(X[u,:]), X[u,:])
         elif self.impute_strategy == 'median':
-            median = np.median(X)
-            X[X<1] = median
+            for u in range(self.trainset.n_users):
+                X[u,:] = np.where(X[u,:]<1, np.median(X[u,:]), X[u,:])
 
         # Compute the SVD of X
         U, S, Vt = np.linalg.svd(X)
@@ -146,7 +148,6 @@ class ALS(AlgoBase):
         self.high = high
         self.verbose = verbose
 
-        self.trainset = None
         self.P = None
         self.Q = None
 

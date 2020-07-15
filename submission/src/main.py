@@ -38,7 +38,7 @@ def kfold(model, data, k=10):
     # Set up kfold
     dict = cross_validate(model, data, measures=['rmse'], cv=k, n_jobs=-1, verbose=True)
 
-def grid(algo_class, data, dict, k=10):
+def grid_search(algo_class, data, dict, k=10):
     '''
     Performs parameter grid search. See source.py for the parameter grid. The test metric is RMSE.
 
@@ -134,7 +134,11 @@ if __name__ == '__main__':
         model.verbose = args.verbose
 
     # Perform requested computation
-    if args.exec_mode == 'cv':
+    if args.algo_class == 'Ensemble':
+        file_name = source.PREDICTIONS_DIR + args.algo_class.lower() + '-' + str(args.model_num) + '.csv'
+        model.average()
+        model.df_submission.to_csv(file_name, index=False)
+    elif args.exec_mode == 'cv':
         cv(model, dataset)
     elif args.exec_mode == 'kfold':
         kfold(model, dataset, k=args.k)
