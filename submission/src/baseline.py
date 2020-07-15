@@ -1,8 +1,9 @@
 '''
-This file contains some baseline algorithms.
+This file contains the implementation of baseline algorithms.
 
-The algorithms are implementated with the help of the Surprise package, which significantly helps with data management
-and cross-validation.
+The algorithm is implementated with the help of the Surprise package, which significantly helps with data management
+and cross-validation. Furthermore, the notation used in the implmentation mirrors the one used in the Surprise base
+algorithms (see their GitHub repository).
 
 The implemented algorithms are:
 - SVD

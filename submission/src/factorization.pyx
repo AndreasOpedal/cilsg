@@ -1,14 +1,13 @@
 '''
-This file contains an array of factorization methods based on SVD being solved via SGD.
+This file contains the implementation of SVDPP2, a variant of Koren's SVD++ using heuristics, learning rate decay and
+gradient momentum.
 
-The algorithms are implementated with the help of the Surprise package, which significantly helps with data management
-and cross-validation.
+The algorithm is implementated with the help of the Surprise package, which significantly helps with data management
+and cross-validation. Furthermore, the notation used in the implmentation mirrors the one used in the Surprise base
+algorithms (see their GitHub repository).
 
 The optimization is written in Cython, in order to speed up the costly computations.
 This approach is similar to the one used in the Surprise package algorithms.
-
-All algorithms follow the same structure as Simon Funk's SVD. The implemented algorithms are:
-- SVDPP2, an implentation of Koren's SVD++ using heuristics, learning rate decay and gradient momentum
 '''
 
 cimport numpy as np

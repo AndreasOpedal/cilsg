@@ -1,3 +1,10 @@
+'''
+This file contains the implementation of pLSA.
+
+The algorithm is implementated with the help of the Surprise package, which significantly helps with data management
+and cross-validation.
+'''
+
 import numpy as np
 import pandas as pd
 from surprise import Reader, Dataset

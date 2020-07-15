@@ -1,3 +1,10 @@
+'''
+This file contains the implementation of the Ensemble model used for the final submission.
+
+Note that this is a 'static' model, in the sense that it is not possible to perform cross-validation.
+Rather, the user can provide paths to .csv files holding predictions for SVD++, pLSA, and VAE.
+'''
+
 import numpy as np
 import pandas as pd
 import source
