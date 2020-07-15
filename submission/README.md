@@ -54,12 +54,12 @@ We implement the following `algorithm`s:
 + `SVDPP2` (*src/factorization.pyx*): a variation of the SVD++ algorithm
 + `PLSA` (*src/plsa.py*): an implementation of pLSA, which uses the EM-algorithm, where we add an additional SVD step to compute the final prediction
 + `SVDthr` (*src/thresholding.py*): an implementation of SVD thresholding
-+ `VAE` (*notebooks/VAE.ipynb*): an implementation of a variational auto-encoder
++ `VAE` (*src/vae/VAE.ipynb*): an implementation of a variational auto-encoder
 + `Ensemble` (*src/ensemble.py*): an ensemble method where the results of different algorithms are averaged
 
 Hyper-parameters for each class are well documented in the source code.
 
-**Note**: algorithm `VAE` can only be run via notebook (see *notebooks/* directory).
+**Note**: algorithm `VAE` can only be run via notebook (see *src/vae/* directory).
 
 ### Structure
 
@@ -154,7 +154,7 @@ python3 main.py predict SVDPP2
 python3 main.py predict PLSA
 ```
 
-To execute `VAE`, go to the *notebook/* directory and run the `vae.ipynb` notebook.
+To execute `VAE`, go to the *src/vae/* directory and run the `VAE.ipynb` notebook.
 
 After this all the base model are ready. Now run the ensemble with the following command:
 
@@ -163,4 +163,4 @@ cd src/
 python3 main.py predict Ensemble
 ```
 
-However, if executing the base models is too time-consuming, it is sufficient to run only the `Ensemble` model, as we already make available the predictions of the base models.
+However, if executing the base models is too time-consuming, it is sufficient to run only the `Ensemble` model as instructed above, as we already make available the predictions of the base models.
