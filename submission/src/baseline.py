@@ -77,11 +77,10 @@ class SVD(AlgoBase):
         if isinstance(self.impute_strategy, int):
             X[X<1] = int(self.impute_strategy)
         elif self.impute_strategy == 'mean':
-            for u in range(self.trainset.n_users):
-                X[u,:] = np.where(X[u,:]<1, np.mean(X[u,:]), X[u,:])
+            X[X<1] = self.trainset.global_mean
         elif self.impute_strategy == 'median':
-            for u in range(self.trainset.n_users):
-                X[u,:] = np.where(X[u,:]<1, np.median(X[u,:]), X[u,:])
+            median = np.median(X)
+            X[X<1] = median
 
         if self.verbose:
             print('Computing the SVD...')
@@ -89,10 +88,13 @@ class SVD(AlgoBase):
         # Compute the SVD of X
         U, s, Vt = np.linalg.svd(X)
 
+        # Represent singular values in matrix
+        S = np.concatenate((np.diag(s), np.zeros((self.trainset.n_users-self.trainset.n_items,self.trainset.n_items))), axis=0)
+
         self.V = Vt.T
 
         # Compute prediction matrix
-        self.pred_matrix = np.matmul(U[:,0:self.n_factors], np.matmul(s[0:self.n_factors,0:self.n_factors], Vt[0:self.n_factors,:]))
+        self.pred_matrix = np.matmul(U[:,0:self.n_factors], np.matmul(S[0:self.n_factors,0:self.n_factors], Vt[0:self.n_factors,:]))
 
     def estimate(self, u, i):
         '''
@@ -102,7 +104,7 @@ class SVD(AlgoBase):
         u (int): the user index
         i (int): the item index
 
-        Retuns:
+        Returns:
         est (float): the rating estimate
         '''
 
@@ -213,7 +215,7 @@ class ALS(AlgoBase):
         u (int): the user index
         i (int): the item index
 
-        Retuns:
+        Returns:
         est (float): the rating estimate
         '''
 

@@ -13,7 +13,6 @@ This approach is similar to the one used in the Surprise package algorithms.
 cimport numpy as np
 import numpy as np
 from surprise import AlgoBase, PredictionImpossible
-from baseline import SVD
 
 class SVDPP2(AlgoBase):
     '''
@@ -111,11 +110,10 @@ class SVDPP2(AlgoBase):
         if isinstance(self.impute_strategy, int):
             X[X<1] = int(self.impute_strategy)
         elif self.impute_strategy == 'mean':
-            for u in range(self.trainset.n_users):
-                X[u,:] = np.where(X[u,:]<1, np.mean(X[u,:]), X[u,:])
+            X[X<1] = self.trainset.global_mean
         elif self.impute_strategy == 'median':
-            for u in range(self.trainset.n_users):
-                X[u,:] = np.where(X[u,:]<1, np.median(X[u,:]), X[u,:])
+            median = np.median(X)
+            X[X<1] = median
 
         # Compute the SVD of X
         U, S, Vt = np.linalg.svd(X)
@@ -124,9 +122,6 @@ class SVDPP2(AlgoBase):
 
         # Square root of D
         D = np.sqrt(D)
-
-        # Pad D
-        D_p = np.append(D, np.zeros((U.shape[0]-D.shape[0],D.shape[0])), axis=0)
 
         V = D.dot(Vt.T)
 
@@ -198,9 +193,7 @@ class SVDPP2(AlgoBase):
         u_impl_fdb = np.zeros((self.trainset.n_users,self.n_factors))
 
         # Get item factors via SVD
-        svd = SVD(n_factors=self.n_factors, impute_strategy=self.impute_strategy)
-        svd.fit(self.trainset)
-        V = svd.V
+        V = self.svd()
 
         for u in range(self.trainset.n_users):
             u_rated = 0
