@@ -14,11 +14,11 @@ class PLSA(AlgoBase):
         Initializes the class with the given parameters.
 
         Parameters:
-        n_latent (int): the number of latent states. By default 5
+        n_latent (int): the number of latent states. By default 20
         n_eig (int): the number of eigenvalues to use in the SVD. By default 8.
         n_epochs (int): the number of iterations. By default 5
         normalized (bool): whether to normalize observed rating matrix. By default True
-        alpha (float): smoothing factor to calculate user's mean and variance. Only used if "normalized" is True. By default 5
+        alpha (float): smoothing factor to calculate user's mean and variance. Only used if "to_normalize" is True. By default 5
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         verbose (bool): whether the algorithm should be verbose. By default False
