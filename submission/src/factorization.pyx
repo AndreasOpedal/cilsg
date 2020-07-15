@@ -92,6 +92,49 @@ class SVDPP2(AlgoBase):
 
         return self
 
+    def svd(self):
+        '''
+        Computes the SVD of the training matrix
+
+        Returns:
+        V (numpy.ndarray): the matrix representing the item-factors
+        '''
+
+        # Build the training matrix
+        X = np.zeros((self.trainset.n_users,self.trainset.n_items))
+
+        # Fill the training matrix
+        for u, i, r in self.trainset.all_ratings():
+            X[u,i] = r
+
+        # Impute empty ratings (if instructed)
+        if isinstance(self.impute_strategy, int):
+            X[X<1] = int(self.impute_strategy)
+        elif self.impute_strategy == 'mean':
+            for u in range(self.trainset.n_users):
+                X[u,:] = np.where(X[u,:]<1, np.mean(X[u,:]), X[u,:])
+        elif self.impute_strategy == 'median':
+            for u in range(self.trainset.n_users):
+                X[u,:] = np.where(X[u,:]<1, np.median(X[u,:]), X[u,:])
+
+        # Compute the SVD of X
+        U, S, Vt = np.linalg.svd(X)
+        D = np.zeros(shape=(S.shape[0],S.shape[0])) # create diagonal matrix D
+        np.fill_diagonal(D,S) # fill D with S
+
+        # Square root of D
+        D = np.sqrt(D)
+
+        # Pad D
+        D_p = np.append(D, np.zeros((U.shape[0]-D.shape[0],D.shape[0])), axis=0)
+
+        V = D.dot(Vt.T)
+
+        # Select vectors from V
+        V = V[:,:self.n_factors]
+
+        return V
+
     def sgd(self):
         '''
         Finds matrices P, Q by optimizing the following objective function:
@@ -154,7 +197,7 @@ class SVDPP2(AlgoBase):
         # Initialize item factors
         u_impl_fdb = np.zeros((self.trainset.n_users,self.n_factors))
 
-        # Use SVD to get item factors
+        # Get item factors via SVD
         svd = SVD(n_factors=self.n_factors, impute_strategy=self.impute_strategy)
         svd.fit(self.trainset)
         V = svd.V

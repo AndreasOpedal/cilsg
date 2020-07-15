@@ -20,23 +20,28 @@ class SVD(AlgoBase):
     Implementation of SVD.
     '''
 
-    def __init__(self, n_factors=160, impute_strategy=None):
+    def __init__(self, n_factors=12, impute_strategy='mean', low=1, high=5, verbose=False):
         '''
         Initializes the class with the given parameters.
 
         Parameters:
-        n_factors (int): the number of latent features. By default 160
+        n_factors (int): the number of latent features. By default 12
         impute_strategy (object): the strategy to use to impute the non-rated items. The options are 'mean', 'median', or any integer
-                                  value. By default None (filled with zeros)
+                                  value. By default 'mean'
+        low (int): the lowest rating value. By default 1
+        high (int): the highest rating value. By default 5
+        verbose (bool): whether the algorithm should be verbose. By default False
         '''
 
         AlgoBase.__init__(self)
 
         self.n_factors = n_factors
         self.impute_strategy = impute_strategy
+        self.low = low
+        self.high = high
+        self.verbose = verbose
 
-        self.U = None
-        self.V = None
+        self.pred_matrix = None
 
     def fit(self, trainset):
         '''
@@ -65,6 +70,9 @@ class SVD(AlgoBase):
         for u, i, r in self.trainset.all_ratings():
             X[u,i] = r
 
+        if self.verbose and self.impute_strategy is not None:
+            print('Imputing training matrix...')
+
         # Impute empty ratings (if instructed)
         if isinstance(self.impute_strategy, int):
             X[X<1] = int(self.impute_strategy)
@@ -75,23 +83,16 @@ class SVD(AlgoBase):
             for u in range(self.trainset.n_users):
                 X[u,:] = np.where(X[u,:]<1, np.median(X[u,:]), X[u,:])
 
+        if self.verbose:
+            print('Computing the SVD...')
+
         # Compute the SVD of X
-        U, S, Vt = np.linalg.svd(X)
-        D = np.zeros(shape=(S.shape[0],S.shape[0])) # create diagonal matrix D
-        np.fill_diagonal(D,S) # fill D with S
+        U, s, Vt = np.linalg.svd(X)
 
-        # Square root of D
-        D = np.sqrt(D)
+        self.V = Vt.T
 
-        # Pad D
-        D_p = np.append(D, np.zeros((U.shape[0]-D.shape[0],D.shape[0])), axis=0)
-
-        U = U.dot(D_p)
-        V = D.dot(Vt.T)
-
-        # Select vectors from U, V
-        self.U = U[:,:self.n_factors]
-        self.V = V[:,:self.n_factors]
+        # Compute prediction matrix
+        self.pred_matrix = np.matmul(U[:,0:self.n_factors], np.matmul(s[0:self.n_factors,0:self.n_factors], Vt[0:self.n_factors,:]))
 
     def estimate(self, u, i):
         '''
@@ -110,7 +111,7 @@ class SVD(AlgoBase):
 
         if known_user and known_item:
             # Compute prediction
-            est = np.dot(self.U[u,:], self.V[i,:])
+            est = self.pred_matrix[u,i]
             # Clip result
             est = np.clip(est, self.low, self.high)
         else:

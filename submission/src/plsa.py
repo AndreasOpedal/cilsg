@@ -21,7 +21,7 @@ class PLSA(AlgoBase):
         Initializes the class with the given parameters.
 
         Parameters:
-        n_latent (int): the number of latent states. By default 20
+        n_latent (int): the number of latent states for a user. By default 20
         n_eig (int): the number of eigenvalues to use in the SVD. By default 8.
         n_epochs (int): the number of iterations. By default 5
         normalized (bool): whether to normalize observed rating matrix. By default True
@@ -132,23 +132,44 @@ class PLSA(AlgoBase):
 
         AlgoBase.fit(self, trainset)
 
-        # Call EM algorithm
-        self.em()
-
-    def em(self):
-        '''
-        Gaussian probabilistic latent semantic analysis via EM-algorithm.
-        '''
-
         # Prepare (training) ratings dataframe
         ratings = []
         for u, i, r in self.trainset.all_ratings():
             ratings.append([u, i, r])
         ratings = pd.DataFrame(ratings, columns=['row', 'col', 'Prediction'])
 
+        # Call EM algorithm
+        p_z, mu_iz, usermu, uservar = self.em(ratings)
+
+        # Compute prediction
+        pred = np.nan_to_num(p_z)@np.nan_to_num(mu_iz.T)
+
+        if self.to_normalize:
+            pred = np.add(np.multiply(pred, uservar[:,np.newaxis]), usermu[:,np.newaxis])
+
+        # Compute SVD of prediction
+        self.pred_matrix = self.svd(ratings, pred)
+
+    def em(self, ratings):
+        '''
+        Gaussian probabilistic latent semantic analysis via EM-algorithm.
+        The aim of the algorithm is to compute the probability matrix of latent states for a user (p_z), the matrix holding mean
+        values for latent state and user (mu_iz), the vector of users smoothed average (usermu), and the vector of users smoothed
+        variance (uservar). The latter two are computed only if normalization if applied to the training data.
+
+        Parameters:
+        ratings (pandas.DataFrame): 3 columns with observed row index, column index and rating of full rating matrix
+
+        Returns:
+        p_z, mu_iz, usermu, uservar (numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray)
+        '''
+
         # Initialization
         p_z = np.random.rand(self.trainset.n_users,self.n_latent) #P(z|u)
         p_z /= p_z.sum(1)[:,np.newaxis]
+
+        # Set usermu, uservar to None
+        usermu, uservar = None, None
 
         if self.to_normalize:
             usermu, uservar, ratings = self.normalize(ratings)
@@ -189,14 +210,7 @@ class PLSA(AlgoBase):
                     mu_iz[i,z] = np.dot(p_z_given_uri[:,i,z], item_rating)/denom
                     sigma2_iz[i,z] = np.dot(np.square(item_rating - mu_iz[i,z]), p_z_given_uri[:,i,z])/denom
 
-        # Compute prediction
-        pred = np.nan_to_num(p_z)@np.nan_to_num(mu_iz.T)
-
-        if self.to_normalize:
-            pred = np.add(np.multiply(pred, uservar[:,np.newaxis]), usermu[:,np.newaxis])
-
-        # Compute SVD of prediction
-        self.pred_matrix = self.svd(ratings, pred)
+        return p_z, mu_iz, usermu, uservar
 
     def estimate(self, u, i):
         '''
