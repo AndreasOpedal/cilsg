@@ -159,7 +159,7 @@ To execute `VAE`, go to the *notebook/* directory and run the `vae.ipynb` notebo
 After this all the base model are ready. Now run the ensemble with the following command:
 
 ```
-cd srd/
+cd src/
 python3 main.py predict Ensemble
 ```
 
