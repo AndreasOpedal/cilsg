@@ -117,7 +117,16 @@ The following options are available:
 + `--verbose` (bool): whether the algorithm should be verbose. By default False
 + `--seed` (int): the random seed. By default 0
 
-We recommend setting `verbose=True` for `cv` and `predict`.
+We recommend setting `--verbose=True` for `cv` and `predict`.
+
+### Example: crossvalidation
+
+Let us perform cross-validation on the `SVD` instance we added in the [previous](#adding-a-new-instance) section:
+
+```
+cd src/
+python3 main.py cv SVD --model_num=2
+```
 
 ### Example: prediction
 
@@ -129,15 +138,6 @@ python3 main.py predict SVD
 ```
 
 The `predict` mode generates a *.csv* file of the form *algorithm-model_num.csv*, where *algorithm* is the name of the `algorithm` in lower-case.
-
-### Example: crossvalidation
-
-Let us perform cross-validation on the `SVD` instance we added in the [previous](#adding-a-new-instance) section:
-
-```
-cd src/
-python3 main.py cv SVD --model_num=2
-```
 
 ## Notebooks
 
