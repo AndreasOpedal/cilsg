@@ -115,11 +115,11 @@ class PLSA(AlgoBase):
         '''
 
         train_matrix = self.df_to_mat(ratings)
-        train_r, train_c = ratings.loc[:, 'row'], ratings.loc[:, 'col']
-        prediction[train_r, train_c] = train_matrix[train_r, train_c]
+        train_r, train_c = ratings.loc[:,'row'], ratings.loc[:,'col']
+        prediction[train_r,train_c] = train_matrix[train_r,train_c]
         u, s, vh = np.linalg.svd(prediction)
         s = s[:self.n_eig]
-        svdresult = u[:, :s.shape[0]]@np.diag(s)@vh[:s.shape[0], :]
+        svdresult = u[:,:s.shape[0]]@np.diag(s)@vh[:s.shape[0],:]
         return svdresult
 
     def fit(self, trainset):
