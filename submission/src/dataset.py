@@ -71,8 +71,8 @@ def create_n_splits(filename, n=5, random_state=42):
 
 
 def load_datasets(train_idx=[0,1,2,3], valid_idx=4):
-    X_train = np.sum([_load_cached("../data/data_train.csv.%d" % i) for i in train_idx])
-    X_test = _load_cached("../data/sampleSubmission.csv")
-    X_valid = _load_cached(f"../data/data_train.csv.{valid_idx}")
+    X_train = np.sum([_load_cached("../data/data-train.csv.%d" % i) for i in train_idx])
+    X_test = _load_cached("../data/sample-submission.csv")
+    X_valid = _load_cached(f"../data/data-train.csv.{valid_idx}")
 
     return X_train, X_valid, X_test
