@@ -7,7 +7,6 @@ and cross-validation.
 
 import numpy as np
 import pandas as pd
-from surprise import Reader, Dataset
 from surprise import AlgoBase, PredictionImpossible
 
 class PLSA(AlgoBase):
