@@ -90,16 +90,22 @@ class PLSA(AlgoBase):
         usermu, uservar, result (numpy.ndarray, numpy.ndarray, pandas.DataFrame)
         '''
 
+        if self.verbose:
+            print('Normalizing...')
+
         mu = np.mean(ratings['Prediction'])
         var = np.var(ratings['Prediction'])
-        rating_sum_per_user = ratings.groupby(by = 'row')['Prediction'].sum()
-        counts = ratings.groupby(by = 'row')['row'].count()
-        deviation_per_user = np.multiply(ratings.groupby(by = 'row')['Prediction'].var(), counts)
+        rating_sum_per_user = ratings.groupby(by='row')['Prediction'].sum()
+        counts = ratings.groupby(by='row')['row'].count()
+        deviation_per_user = np.multiply(ratings.groupby(by='row')['Prediction'].var(), counts)
+        deviation_per_user = np.nan_to_num(deviation_per_user) # check for nan
         usermu = (rating_sum_per_user + self.alpha*mu)/(counts + self.alpha)
         uservar = (deviation_per_user + self.alpha*var)/(counts + self.alpha)
         result = ratings.copy().sort_values(by='row')
         norm_ratings = np.divide(result['Prediction'].to_numpy() - np.repeat(usermu, counts), np.repeat(np.sqrt(uservar), counts))
         result['Prediction'] = norm_ratings.to_numpy()
+        usermu = np.nan_to_num(usermu) # check for nan
+        uservar = np.nan_to_num(uservar) # check for nan
         return usermu, uservar, result
 
     def svd(self, ratings, prediction):
@@ -113,6 +119,9 @@ class PLSA(AlgoBase):
         Returns:
         svdresult (numpy.ndarray): full rating matrix computed by SVD
         '''
+
+        if self.verbose:
+            print('Computing the SVD...')
 
         train_matrix = self.df_to_mat(ratings)
         train_r, train_c = ratings.loc[:,'row'], ratings.loc[:,'col']
@@ -147,7 +156,7 @@ class PLSA(AlgoBase):
         if self.to_normalize:
             pred = np.add(np.multiply(pred, uservar[:,np.newaxis]), usermu[:,np.newaxis])
 
-        # Compute SVD of prediction
+        # Compute the SVD of prediction
         self.pred_matrix = self.svd(ratings, pred)
 
     def em(self, ratings):
@@ -186,16 +195,16 @@ class PLSA(AlgoBase):
             # E-step
             if self.verbose:
                 print('E-step...')
-                def helper(row):
-                    user = np.int(row[0])
-                    item = np.int(row[1])
-                    rating = row[2]
-                    p_rating_item = self.gaussian_model(rating, mu_iz[item], sigma2_iz[item]) # all p(rating,item|z)
-                    denom = np.dot(p_rating_item, p_z[user]) #p(rating, item|z)p(z|u)
-                    for z in range(self.n_latent):
-                        nom = self.gaussian_model(rating, mu_iz[item, z], sigma2_iz[item, z])*p_z[user, z]
-                        p_z_given_uri[user, item, z] = nom/denom #p(z|user, rating, item;thetahat)
-                ratings.apply(helper, 1)
+            def helper(row):
+                user = np.int(row[0])
+                item = np.int(row[1])
+                rating = row[2]
+                p_rating_item = self.gaussian_model(rating, mu_iz[item], sigma2_iz[item]) # all p(rating,item|z)
+                denom = np.dot(p_rating_item, p_z[user]) #p(rating, item|z)p(z|u)
+                for z in range(self.n_latent):
+                    nom = self.gaussian_model(rating, mu_iz[item,z], sigma2_iz[item,z])*p_z[user,z]
+                    p_z_given_uri[user,item,z] = nom/denom #p(z|user, rating, item;thetahat)
+            ratings.apply(helper, 1)
             # M-step
             if self.verbose:
                 print('M-step...')
