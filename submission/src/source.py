@@ -42,7 +42,7 @@ instances['SVDthr'] = {}
 instances['PLSA'] = {}
 instances['Ensemble'] = {}
 
-# Index single algorithm classes. Further model instances can manually be added.
+# Index single algorithm classes. Further model instances can be manually added.
 instances['SVD'][1] = SVD()
 instances['ALS'][1] = ALS()
 instances['SVDPP2'][1] = SVDPP2()

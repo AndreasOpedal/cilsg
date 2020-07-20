@@ -20,7 +20,7 @@ class SVDPP2(AlgoBase):
     In the optimization, both learning rate (linear) decay and gradient momentum are used.
     '''
 
-    def __init__(self, n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.005, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=50, impute_strategy=-5, low=1, high=5, verbose=False):
+    def __init__(self, n_factors=192, n_epochs=85, init_mean=0.2, init_std=0.001, lr_pu=0.005, lr_qi=0.005, alpha_pu=0.3, alpha_qi=0.3, decay_pu=0.02, decay_qi=0.05, reg_pu=0.06, reg_qi=0.065, lambda_bu=25, lambda_bi=0.5, lambda_yj=55, impute_strategy=-5.0, low=1, high=5, verbose=False):
         '''
         Initializes the class with the given parameters.
 
@@ -28,7 +28,7 @@ class SVDPP2(AlgoBase):
         n_factors (int): the number of latent features. By default 192
         n_epochs (int): the number of iterations. By default 85
         init_mean (float): initialization mean. By default 0.2
-        init_std (float): initialization standard deviation. By default 0.005
+        init_std (float): initialization standard deviation. By default 0.001
         lr_pu (float): the learning rate for P. By default 0.005
         lr_qi (float): the learning rate for P. By default 0.005
         alpha_pu (float): the strength of the gradient momentum of P. By default 0.3
@@ -40,8 +40,8 @@ class SVDPP2(AlgoBase):
         lambda_bu (float): the regularizer for the initialization of b[u]. By default 25
         lambda_bi (float): the regularizer for the initialization of b[i]. By default 0.5
         lambda_yj (float): the regularizer for the initialization of the item factors. By default 50
-        impute_strategy (object): the strategy to use to impute the non-rated items. The options are 'mean', 'median', or any integer
-                                  value. By default -5
+        impute_strategy (object): the strategy to use to impute the non-rated items. The options are 'mean', 'median', or any float
+                                  value. By default -5.0
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         verbose (bool): whether the algorithm should be verbose. By default False
@@ -107,8 +107,8 @@ class SVDPP2(AlgoBase):
             X[u,i] = r
 
         # Impute empty ratings (if instructed)
-        if isinstance(self.impute_strategy, int):
-            X[X<1] = int(self.impute_strategy)
+        if isinstance(self.impute_strategy, float):
+            X[X<1] = float(self.impute_strategy)
         elif self.impute_strategy == 'mean':
             X[X<1] = self.trainset.global_mean
         elif self.impute_strategy == 'median':

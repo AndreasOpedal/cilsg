@@ -15,16 +15,16 @@ class PLSA(AlgoBase):
     prediction matrix
     '''
 
-    def __init__(self, n_latent=20, n_eig=8, n_epochs=5, to_normalize=True, alpha=5, low=1, high=5, verbose=False):
+    def __init__(self, n_latent=20, n_eig=12, n_epochs=5, to_normalize=True, alpha=45, low=1, high=5, verbose=False):
         '''
         Initializes the class with the given parameters.
 
         Parameters:
         n_latent (int): the number of latent states for a user. By default 20
-        n_eig (int): the number of eigenvalues to use in the SVD. By default 8.
+        n_eig (int): the number of eigenvalues to use in the SVD. By default 12.
         n_epochs (int): the number of iterations. By default 5
         normalized (bool): whether to normalize observed rating matrix. By default True
-        alpha (float): smoothing factor to calculate user's mean and variance. Only used if "to_normalize" is True. By default 5
+        alpha (float): smoothing factor to calculate user's mean and variance. Only used if "to_normalize" is True. By default 45
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         verbose (bool): whether the algorithm should be verbose. By default False
