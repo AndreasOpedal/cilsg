@@ -14,7 +14,7 @@ class Ensemble:
     Implementation of an ensemble model, which makes predictions based on the average of SVDPP2, PLSA, and VAE.
     '''
 
-    def __init__(self, svdpp2_file='../predictions/svdpp2-1.csv', plsa_file='../predictions/plsa-1.csv', vae_file='../predictions/vae-1.csv'):
+    def __init__(self, svdpp2_file='../predictions/svdpp2-1.csv', plsa_file='../predictions/plsa-1.csv', vae_file='../predictions/vae-1.csv', verbose=False):
         '''
         Initializes the class with the given parameters.
 
@@ -22,11 +22,13 @@ class Ensemble:
         svdpp2_file (str): the file holding the predictions for the SVDPP2 model. By default ../predictions/svdpp2-1.csv
         plsa_file (str): the file holding the predictions for the PLSA model. By default ../predictions/plsa-1.csv
         vae_file (str): the file holding the predictions for the VAE model. By default ../predictions/vae-1.csv
+        verbose (bool): whether the algorithm should be verbose. By default False
         '''
 
         self.svdpp2_file = svdpp2_file
         self.plsa_file = plsa_file
         self.vae_file = vae_file
+        self.verbose = verbose
 
         self.df_submission = None
 
@@ -55,6 +57,9 @@ class Ensemble:
         Computes the average ratings for the three base models.
         '''
 
+        if self.verbose:
+            print('Processing data...')
+
         # Read predictions
         df_svdpp2 = pd.read_csv(self.svdpp2_file)
         df_plsa = pd.read_csv(self.plsa_file)
@@ -75,10 +80,12 @@ class Ensemble:
         df_vae.sort_values(by=['col','row'], inplace=True)
         preds_submission.sort_values(by=['col','row'], inplace=True)
 
+        if self.verbose:
+            print('Averaging...')
+
         # Compute average
         # preds = np.mean(np.array([df_svdpp2['Prediction'].values, df_plsa['Prediction'].values, df_vae['Prediction'].values]), axis=0)
         preds = np.mean(np.array([df_svdpp2['Prediction'].values, df_vae['Prediction'].values]), axis=0)
-
 
         # Write predictions into prediction dataframe
         preds_submission['Prediction'] = preds

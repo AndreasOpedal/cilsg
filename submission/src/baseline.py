@@ -126,16 +126,14 @@ class ALS(AlgoBase):
     Implementation of ALS.
     '''
 
-    def __init__(self, n_factors=160, n_epochs=5, init_mean=0, init_std=0.1, reg=1, low=1, high=5, verbose=False):
+    def __init__(self, n_factors=20, n_epochs=100, reg=0.1, low=1, high=5, verbose=False):
         '''
         Initializes the class with the given parameters.
 
         Parameters:
-        n_factors (int): the number of latent features. By default 100
-        n_epochs (int): the number of iterations. By default 5
-        init_mean (float): initialization mean. By default 0
-        init_std (float): initialization standard deviation. By default 0.1
-        reg (float): the regularization strength. By default 1
+        n_factors (int): the number of latent features. By default 20
+        n_epochs (int): the number of iterations. By default 100
+        reg (float): the regularization strength. By default 0.1
         low (int): the lowest rating value. By default 1
         high (int): the highest rating value. By default 5
         verbose (bool): whether the algorithm should be verbose. By default False
@@ -145,8 +143,6 @@ class ALS(AlgoBase):
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
-        self.init_mean = init_mean
-        self.init_std = init_std
         self.reg = reg
         self.low = low
         self.high = high
@@ -185,8 +181,8 @@ class ALS(AlgoBase):
             A[u,i] = r
 
         # Initialize P, Q
-        P = np.random.normal(self.init_mean, self.init_std, (self.n_factors,self.trainset.n_users))
-        Q = np.random.normal(self.init_mean, self.init_std, (self.n_factors,self.trainset.n_items))
+        P = np.ones((self.n_factors,self.trainset.n_users))
+        Q = np.ones((self.n_factors,self.trainset.n_items))
 
         # Identity of size k
         Id_k = np.identity(self.n_factors)
