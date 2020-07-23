@@ -164,3 +164,5 @@ python3 main.py predict Ensemble
 ```
 
 However, if executing the base models is too time-consuming, it is sufficient to run only the `Ensemble` model as instructed above, as we already make available the predictions of the base models.
+
+**Note**: because of our algorithms deal with random quantities, results may not be exactly the same. This is especially true for the `VAE` algorithm. 
