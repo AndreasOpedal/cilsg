@@ -141,8 +141,7 @@ The `predict` mode generates a *.csv* file of the form *algorithm-model_num.csv*
 
 ## Notebooks
 
-Notebooks are meant to give the user a better understanding of the code implemented in *src/*. Their goal is to provide the mathematical background, clarify the code, and creating plots to better illustrate how the algorithm learns the weights.
-Notebooks are not meant however to perform cross-validation, as it would be quite time-consuming.
+Notebooks are meant to give the user a better understanding of the code implemented in *src/*. Their goal is to provide some mathematical background, data visualization, a clearer code, and plots to better illustrate how algorithms carry out the optimization.
 
 ## Reproducing the final model
 
@@ -165,4 +164,4 @@ python3 main.py predict Ensemble
 
 However, if executing the base models is too time-consuming, it is sufficient to run only the `Ensemble` model as instructed above, as we already make available the predictions of the base models.
 
-**Note**: because of our algorithms deal with random quantities, results may not be exactly the same. This is especially true for the `VAE` algorithm. 
+**Note**: because of our algorithms deal with random quantities, results may not be exactly the same. This is especially true for the `VAE` algorithm.
