@@ -20,7 +20,7 @@ We explain how to the submission directory is organized, how to run the algorith
 
 ## Directory structure
 
-This submission directory is structured as follows: the *data/* directory contains the training data and the missing entries for the submission. The *src/* data contains the implementation of most algorithms. The *notebook/* directory contains notebooks for each algorithm. Finally, the *predictions/* directory holds the predictions for our best models.
+This submission directory is structured as follows: the *data/* directory contains the training data and the missing entries for the submission. The *src/* data contains the implementation of each algorithms. The *notebook/* directory contains notebooks for some algorithm. Finally, the *predictions/* directory holds the predictions for our best models.
 
 ## Requirements
 
@@ -164,4 +164,4 @@ python3 main.py predict Ensemble
 
 However, if executing the base models is too time-consuming, it is sufficient to run only the `Ensemble` model as instructed above, as we already make available the predictions of the base models.
 
-**Note**: because of our algorithms deal with random quantities, results may not be exactly the same. This is especially true for the `VAE` algorithm.
+**Note**: results for the `VAE` algorithm may vary, even if the random seed is set. This is because of PyTorch and the fact that it is difficult to set it for the GPU.
